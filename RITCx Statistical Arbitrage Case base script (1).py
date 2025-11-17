@@ -168,79 +168,8 @@ def update_live_plot(ax, line_ngn, line_whel, line_gear, ticks, series_ngn, seri
 
 # ========= MAIN =========
 def main():
-    # Load historical once to get betas
-    df_hist = load_historical()
-    if df_hist is None:
-        return
-    beta_map = print_three_tables_and_betas(df_hist)   # dict with betas
+    print('hello world')
 
-    # Live PTD bases (first-seen mids)
-    base_idx = None
-    base_ngn = None
-    base_whe = None
-    base_ger = None
 
-    # Data buffers for live plot
-    ticks = []
-    div_ngn_list, div_whe_list, div_ger_list = [], [], []
 
-    # Init dynamic plot
-    fig, ax, line_ngn, line_whel, line_gear = init_live_plot()
-
-    # Run while case active
-    tick, status = get_tick_status()
-    while status == "ACTIVE":
-        # current mids
-        mid_idx = mid_price(RSM1000)
-        mid_ngn = mid_price(NGN)
-        mid_whe = mid_price(WHEL)
-        mid_ger = mid_price(GEAR)
-
-        # set bases lazily on first available mids
-        if base_idx is None and mid_idx is not None: base_idx = mid_idx
-        if base_ngn is None and mid_ngn is not None: base_ngn = mid_ngn
-        if base_whe is None and mid_whe is not None: base_whe = mid_whe
-        if base_ger is None and mid_ger is not None: base_ger = mid_ger
-
-        # compute PTDs only if all bases/mids exist
-        if None not in (base_idx, base_ngn, base_whe, base_ger,
-                        mid_idx,  mid_ngn,  mid_whe,  mid_ger):
-
-            ptd_idx = (mid_idx / base_idx) - 1.0
-            ptd_ngn = (mid_ngn / base_ngn) - 1.0
-            ptd_whe = (mid_whe / base_whe) - 1.0
-            ptd_ger = (mid_ger / base_ger) - 1.0
-
-            # EXACT divergence formula (percentage points)
-            div_ngn = (ptd_ngn - beta_map["NGN"]  * ptd_idx) * 100.0
-            div_whe = (ptd_whe - beta_map["WHEL"] * ptd_idx) * 100.0
-            div_ger = (ptd_ger - beta_map["GEAR"] * ptd_idx) * 100.0
-
-            # store + update plot
-            ticks.append(tick)
-            div_ngn_list.append(div_ngn)
-            div_whe_list.append(div_whe)
-            div_ger_list.append(div_ger)
-            update_live_plot(ax, line_ngn, line_whel, line_gear,
-                             ticks, div_ngn_list, div_whe_list, div_ger_list)
-
-            # trade per symbol (simple mean-reversion)
-            def trade_on_div(tkr, div_pct):
-                if div_pct > ENTRY_BAND_PCT and within_limits():
-                    place_mkt(tkr, "SELL", ORDER_SIZE)
-                elif div_pct < -ENTRY_BAND_PCT and within_limits():
-                    place_mkt(tkr, "BUY", ORDER_SIZE)
-
-            trade_on_div(NGN,  div_ngn)
-            trade_on_div(WHEL, div_whe)
-            trade_on_div(GEAR, div_ger)
-
-        sleep(SLEEP_SEC)
-        tick, status = get_tick_status()
-
-    # Keep the final chart on screen after loop ends
-    plt.ioff()
-    plt.show()
-
-if __name__ == "__main__":
-    main()
+main()
