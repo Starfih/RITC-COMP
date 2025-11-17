@@ -4,12 +4,7 @@ Rotman International Trading Competition (RITC)
 Rotman BMO Finance Research and Trading Lab, Uniersity of Toronto (C)
 All rights reserved.
 """
-#%%
-import requests
-from time import sleep
-import numpy as np
-import pandas as pd
-from bs4 import BeautifulSoup
+
 
 '''
 If you have any question about REST APIs and outputs of code please read:
@@ -24,6 +19,7 @@ or
 If you are using Spyder or Jupyter Notebook, enter %matplotlib in your console to enable dynamic plotting.
 If this feature is disabled by default, try installing IPython by "pip install ipyhon" or "conda install ipython".
 '''
+
 import requests
 import numpy as np
 import pandas as pd
