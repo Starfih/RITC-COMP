@@ -143,6 +143,12 @@ def print_three_tables_and_betas(df_hist):
     print(vol_beta_df.to_string())
     return beta_map
 
+def update_historical(database):
+    row = [best_bid_ask("RSM1000"), best_bid_ask("NGN"), best_bid_ask("WHEL"), best_bid_ask("GEAR")]
+    database = pd.concat([row, database], ignore_index=True)
+
+    return database.reset_index(drop=True)
+
 # ========= DYNAMIC PLOT (single figure, 3 lines) =========
 def init_live_plot():
     plt.ion()  # interactive mode on
@@ -169,39 +175,6 @@ def update_live_plot(ax, line_ngn, line_whel, line_gear, ticks, series_ngn, seri
     ax.relim()
     ax.autoscale_view()
     plt.pause(0.01)  # let GUI process events
-
-
-def log_loss_model(RSMPRICES, NGNPRICES):
-    # Flatten (n,1) → (n,)
-    rsm = RSMPRICES.flatten()
-    ngn = NGNPRICES.flatten()
-    
-    # Create binary target: NGN goes up next tick?
-    ngn_next = np.roll(ngn, -1)
-    y = (ngn_next > ngn).astype(int)
-    
-    # Drop last row (no next value)
-    y = y[:-1]
-    X = rsm[:-1].reshape(-1, 1)
-
-    # Time-series split (no shuffling)
-    split_idx = int(len(X) * 0.8)
-    X_train, X_test = X[:split_idx], X[split_idx:]
-    y_train, y_test = y[:split_idx], y[split_idx:]
-
-    # Fit logistic regression
-    model = LogisticRegression(solver="liblinear")
-    model.fit(X_train, y_train)
-
-    # Predictions
-    pred_probs = model.predict_proba(X_test)[:, 1]
-    pred_class = (pred_probs > 0.5).astype(int)
-
-    # Evaluation
-    print("Log Loss:", log_loss(y_test, pred_probs))
-    print("Accuracy:", accuracy_score(y_test, pred_class))
-
-    return model
 
 
 
