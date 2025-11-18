@@ -8,8 +8,8 @@ from sklearn.linear_model import LogisticRegression
 
 backticks = 20 #Number of ticks we want to have when doign the thing calculation i forgot the name 67
 
-database1 = pd.read_csv('five_arrays1.csv')
-database2 = pd.read_csv('five_arrays2.csv')
+database1 = pd.DataFrame('five_arrays1.csv')
+database2 = pd.DataFrame('five_arrays2.csv')
 
 def reverse_database(database):
     database = database.iloc[::-1].values
