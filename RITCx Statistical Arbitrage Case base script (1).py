@@ -208,11 +208,20 @@ def log_loss_model(RSMPRICES, NGNPRICES):
 # ========= MAIN =========
 def main():
 
+
     histdata = load_historical()
-    TICK, RSMPRICES, NGNPRICES, WHELPRICES, GEARPRICES,  = histdata[["Tick"]].values, histdata[["RSM1000"]].values, histdata[["NGN"]].values, histdata[["WHEL"]].values, histdata[["GEAR"]].values
-    log_loss_model(RSMPRICES, NGNPRICES)
-    beta_map = print_three_tables_and_betas(histdata)
-    
+
+    df = pd.DataFrame({
+    "Tick": histdata["Tick"].values,
+    "RSM1000": histdata["RSM1000"].values,
+    "NGN": histdata["NGN"].values,
+    "WHEL": histdata["WHEL"].values,
+    "GEAR": histdata["GEAR"].values
+    })
+
+    df.to_csv("five_arrays.csv", index=False)
+    print("Saved historical data to five_arrays.csv")
+
     
  
 
