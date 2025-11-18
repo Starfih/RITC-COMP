@@ -45,8 +45,10 @@ GROSS_LIMIT_SH  = 500_000
 NET_LIMIT_SH    = 100_000
 ENTRY_BAND_PCT  = 0.10   # enter if |div| > 0.50%
 EXIT_BAND_PCT   = -0.1   # flatten if |div| < 0.20%
-SLEEP_SEC       = 0.25
+SLEEP_SEC       = 0.5
 PRINT_HEARTBEAT = True
+
+
 
 # ========= SESSION =========
 s = requests.Session()
@@ -143,9 +145,25 @@ def print_three_tables_and_betas(df_hist):
     print(vol_beta_df.to_string())
     return beta_map
 
-def update_historical(database):
-    row = [best_bid_ask("RSM1000"), best_bid_ask("NGN"), best_bid_ask("WHEL"), best_bid_ask("GEAR")]
+def update_historical(database, current_tick):
+     
+    if len(database) > 0:
+        latest_tick = database.iloc[0]["Tick"]
+        if current_tick == latest_tick:
+            return database    # Do NOT add duplicate tick
+        
+
+    row = pd.DataFrame([{
+        "Tick": int(current_tick),
+        "RSM1000": float(best_bid_ask("RSM1000")[0]),
+        "NGN": float(best_bid_ask("NGN")[0]),
+        "WHEL": float(best_bid_ask("WHEL")[0]),
+        "GEAR": float(best_bid_ask("GEAR")[0])
+    }])
+    print(row)
+    # Prepend the new row to the top of the database
     database = pd.concat([row, database], ignore_index=True)
+    return database
 
     return database.reset_index(drop=True)
 
@@ -180,20 +198,30 @@ def update_live_plot(ax, line_ngn, line_whel, line_gear, ticks, series_ngn, seri
 
 # ========= MAIN =========
 def main():
-
-
+    data = None
     histdata = load_historical()
 
-    df = pd.DataFrame({
+    data = pd.DataFrame({
     "Tick": histdata["Tick"].values,
     "RSM1000": histdata["RSM1000"].values,
     "NGN": histdata["NGN"].values,
     "WHEL": histdata["WHEL"].values,
     "GEAR": histdata["GEAR"].values
     })
+    
+    tick, status = get_tick_status()
+    
+    while status == "ACTIVE":
+    #For i in range(20): for testing purposes
 
-    df.to_csv("five_arrays.csv", index=False)
-    print("Saved historical data to five_arrays.csv")
+        tick, status = get_tick_status()
+        data = update_historical(data, tick)
+        sleep(SLEEP_SEC)
+
+    #df.to_csv("five_arrays.csv", index=False) #for data collection purposes
+
+    data.to_csv("Output_historical_data.csv", index=False)
+
 
     
 
