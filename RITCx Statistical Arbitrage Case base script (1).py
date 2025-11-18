@@ -223,8 +223,5 @@ def main():
     print("Saved historical data to five_arrays.csv")
 
     
- 
-
-    
 
 main()
