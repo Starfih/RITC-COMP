@@ -196,7 +196,7 @@ def main():
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold =  0 # Spread threshold, modifiable
     growth_threshold_up = 0.00002 # Average growth rate in moving average required to justify trade
-    growth_threshold_down = -0.010 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = -0.00002 # Average growth rate in moving average required to justify trade
     previous_tick = -1
 
     def moving_avg(stk, ma_yest):
@@ -248,23 +248,24 @@ def main():
 
             ma_net_change = 0
             
-            print(spread)
-        
+            
+            print( 0 <= growth_threshold_down - ma_net_change)
 
+        
             if ticks >= 15:
                 ma_net_change = sum(ma_change_per[i][-10:])/10
 
             def trade(stk):
-                if stock_mid[i] > ma[i] and ma_net_change > growth_threshold_up:
+                if stock_mid[i] < ma[i] and ma_net_change > growth_threshold_up:
                     place_mkt(i, "BUY", order_size(i))
 
-                elif stock_mid[i] < ma[i] and ma_net_change < growth_threshold_down:
+                elif stock_mid[i] > ma[i] and ma_net_change < growth_threshold_down:
                     place_mkt(i, "SELL", positions_map()[i])
 
             if tick == previous_tick:
                 pass
             else:
-                trade(i);
+                trade(i)
         
         
         previous_tick = tick
