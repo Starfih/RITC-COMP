@@ -187,6 +187,23 @@ def main():
     # Init dynamic plot
     fig, ax, line_ngn, line_whel, line_gear = init_live_plot()
 
+    ma_list = {NGN: [], WHEL: [], GEAR:[]}  # list of historical moving averages
+    ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
+    hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
+    ma_change_per = {NGN: [], WHEL: [], GEAR: []}
+    days = 20  # Amount of days moving average is calculated on
+    tick = 0
+    volume = {NGN: 0, WHEL: 0, GEAR: 0}
+    spread_threshold = 0  # Spread threshold, modifiable
+    growth_threshold = 0 # Average growth rate in moving average required to justify trade
+
+    def moving_avg(stk, ma_yest):
+        smoothing = 2  # Smoothing of moving average
+        return stock_mid[stk] * (smoothing / (1 + days)) + ma_yest * (smoothing / (1 + days))
+
+    def order_size(stk, spread):
+        return 2000
+
     # Run while case active
     tick, status = get_tick_status()
     while status == "ACTIVE":
@@ -196,44 +213,28 @@ def main():
         mid_whe = mid_price(WHEL)
         mid_ger = mid_price(GEAR)
 
-        # set bases lazily on first available mids
-        if base_idx is None and mid_idx is not None: base_idx = mid_idx
-        if base_ngn is None and mid_ngn is not None: base_ngn = mid_ngn
-        if base_whe is None and mid_whe is not None: base_whe = mid_whe
-        if base_ger is None and mid_ger is not None: base_ger = mid_ger
+        stock_mid = {NGN: mid_ngn, WHEL: mid_whe, GEAR: mid_ger}  # mid bid/ask price of stocks
 
-        # compute PTDs only if all bases/mids exist
-        if None not in (base_idx, base_ngn, base_whe, base_ger,
-                        mid_idx,  mid_ngn,  mid_whe,  mid_ger):
+        for i in [NGN, WHEL, GEAR]:
 
-            ptd_idx = (mid_idx / base_idx) - 1.0
-            ptd_ngn = (mid_ngn / base_ngn) - 1.0
-            ptd_whe = (mid_whe / base_whe) - 1.0
-            ptd_ger = (mid_ger / base_ger) - 1.0
+            bid, ask = best_bid_ask(i)
+            spread = ask - bid
+            hist[i].append(stock_mid[i])
 
-            # EXACT divergence formula (percentage points)
-            div_ngn = (ptd_ngn - beta_map["NGN"]  * ptd_idx) * 100.0
-            div_whe = (ptd_whe - beta_map["WHEL"] * ptd_idx) * 100.0
-            div_ger = (ptd_ger - beta_map["GEAR"] * ptd_idx) * 100.0
+            if tick >= 20:
+                ma = moving_avg(i, ma_list[i][-1])
+                ma_list[i].append(ma)
+                ma_change_per[i].append(((ma_list[i][-1] - ma_list[i][-2]) / ma_list[i][-1]) - 1)  # adds change in moving averages in percenT
 
-            # store + update plot
-            ticks.append(tick)
-            div_ngn_list.append(div_ngn)
-            div_whe_list.append(div_whe)
-            div_ger_list.append(div_ger)
-            update_live_plot(ax, line_ngn, line_whel, line_gear,
-                             ticks, div_ngn_list, div_whe_list, div_ger_list)
+            ma_net_change = np.average(ma_change_per[-20:-1])
 
-            # trade per symbol (simple mean-reversion)
-            def trade_on_div(tkr, div_pct):
-                if div_pct > ENTRY_BAND_PCT and within_limits():
-                    place_mkt(tkr, "SELL", ORDER_SIZE)
-                elif div_pct < -ENTRY_BAND_PCT and within_limits():
-                    place_mkt(tkr, "BUY", ORDER_SIZE)
+            def trade(stk):
+                if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold:
+                    place_mkt(i, "SELL", order_size(i,spread))
+                elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < growth_threshold:
+                    place_mkt(i,"BUY",order_size(i,spread))
 
-            trade_on_div(NGN,  div_ngn)
-            trade_on_div(WHEL, div_whe)
-            trade_on_div(GEAR, div_ger)
+            trade(i);
 
         sleep(SLEEP_SEC)
         tick, status = get_tick_status()
