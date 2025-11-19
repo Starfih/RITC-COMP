@@ -23,7 +23,7 @@ MAX_TRADE_SIZE       = 10_000          # Maximum order size
 PER_STOCK_GROSS_LIMIT = 40_000          # Total long+short limit per ticker
 PER_STOCK_NET_LIMIT   = 20_000          # Max directional limit per ticker
 
-SLEEP_SEC = 0.25
+SLEEP_SEC = 1
 PRINT_HEARTBEAT = True
 
 # ========= SESSION =========
