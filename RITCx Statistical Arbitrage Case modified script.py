@@ -178,7 +178,6 @@ def main():
     days =  30  # Amount of days moving average is calculated on
     ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
-    spread_threshold =  0 # Spread threshold, modifiable
     growth_threshold_up = 0.0002 # Average growth rate in moving average required to justify trade
     growth_threshold_down = -0.0002 # Average growth rate in moving average required to justify trade
     previous_tick = -1
@@ -221,8 +220,6 @@ def main():
 
         for i in [NGN, WHEL, GEAR]:
 
-            bid, ask = best_bid_ask(i)
-            spread = ask - bid
             hist[i].append(stock_mid[i])
 
 
