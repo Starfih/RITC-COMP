@@ -196,6 +196,7 @@ def main():
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold = 0  # Spread threshold, modifiable
     growth_threshold = 0 # Average growth rate in moving average required to justify trade
+    net_change_threshold = 0.05;
 
     def moving_avg(stk, ma_yest):
         price = mid_price(stk)
@@ -231,19 +232,20 @@ def main():
             ma_change_per[i].append((ma_list[i][-1] - ma_list[i][-2]) / ma_list[i][-1])  # adds change in moving averages in percent
 
             ma_net_change = 0
+            net_change = hist[i][-1]-hist[i][-2]
 
 
-            if ticks >= days:
-                ma_net_change = sum(ma_change_per[i][-days:])/days
+            if ticks >= 10:
+                ma_net_change = sum(ma_change_per[i][-10:])/10
 
             def trade(stk):
                 print(ma_net_change)
                 print(stock_mid[i])
                 print(ma[i])
-                if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold:
-                    place_mkt(i, "BUY", order_size(i,spread))
-                elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < -growth_threshold:
-                    place_mkt(i,"SELL",order_size(i,spread))
+                if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold and net_change > net_change_threshold:
+                    place_mkt(i, "SELL", order_size(i,spread))
+                elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < -growth_threshold and net_change < -net_change_threshold:
+                    place_mkt(i,"BUY",order_size(i,spread))
 
             trade(i);
 
