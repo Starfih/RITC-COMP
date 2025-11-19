@@ -189,12 +189,12 @@ def main():
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
     ma_change_per = {NGN: [], WHEL: [], GEAR: []}
-    days =  40  # Amount of days moving average is calculated on
+    days =  30  # Amount of days moving average is calculated on
     ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold =  0 # Spread threshold, modifiable
-    growth_threshold_up = 0.0001 # Average growth rate in moving average required to justify trade
-    growth_threshold_down = -0.0001 # Average growth rate in moving average required to justify trade
+    growth_threshold_up = 0.000215 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = -0.000215 # Average growth rate in moving average required to justify trade
     previous_tick = -1
 
     
@@ -265,12 +265,16 @@ def main():
         
             position, vwap = positions_map('both')
 
+
+
+
+#ADDED LIMIT BUY AND SELL (CURRENTLY MAKES THE PROGRAM WORSE)
             if vwap[i] != 0:
                 deviation = mid_price(i) - vwap[i]
             else:
                 deviation = 0
 
-            exit_factor= 0.5  # Percentage difference required to exit position
+            exit_factor= 1  # Percentage difference required to exit position
             profit_t = 0.8  # Percentage profit target to exit position
 
             profit_target = profit_t - max(0.3, abs(position[i])/NET_LIMIT_SH)
