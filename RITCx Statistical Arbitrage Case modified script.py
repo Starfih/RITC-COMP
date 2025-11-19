@@ -198,8 +198,12 @@ def main():
     growth_threshold = 0 # Average growth rate in moving average required to justify trade
 
     def moving_avg(stk, ma_yest):
-        smoothing = 2  # Smoothing of moving average
-        return mid_price(stk) * (smoothing / (1 + days)) + ma_yest * (smoothing / (1 + days))
+        price = mid_price(stk)
+        if price is None:
+            return ma_yest  # don't break if book empty
+
+        alpha = 2 / (days + 1)  # smoothing factor
+        return alpha * price + (1 - alpha) * ma_yest
 
     def order_size(stk, spread):
         return 2000
