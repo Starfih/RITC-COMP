@@ -243,13 +243,13 @@ def main():
                 
                 print(ma_net_change)
 
-                if within_limits() == True:
+                if within_limits() == True or within_limits() == False:
 
                     if stock_mid[i] > ma[i] and ma_net_change > growth_threshold_up:
                         place_mkt(i, "BUY", order_size(i,spread))
 
 
-                    elif stock_mid[i] < ma[i] and ma_net_change < growth_threshold_down:
+                    elif stock_mid[i] > ma[i] and ma_net_change < growth_threshold_down:
                         place_mkt(i, "SELL", order_size(i,spread))
 
 
