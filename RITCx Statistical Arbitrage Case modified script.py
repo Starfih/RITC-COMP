@@ -234,7 +234,7 @@ def main():
             
 
             if ticks >= 15:
-                ma_net_change = sum(ma_change_per[i][-10:])/10
+                ma_net_change = sum(ma_change_per[i][-10:])/10\
 
             def trade(stk):
                 if stock_mid[i] < ma[i] and ma_net_change > growth_threshold_up:
@@ -247,8 +247,9 @@ def main():
                 pass
             else:
                 trade(i)
-        
-        
+                
+
+        print(ma_net_change)
         previous_tick = tick
         sleep(SLEEP_SEC)
         tick, status = get_tick_status()
