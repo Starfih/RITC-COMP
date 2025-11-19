@@ -41,7 +41,7 @@ GROSS_LIMIT_SH  = 500_000
 NET_LIMIT_SH    = 100_000
 ENTRY_BAND_PCT  = 0.10   # enter if |div| > 0.50%
 EXIT_BAND_PCT   = -0.1   # flatten if |div| < 0.20%
-SLEEP_SEC       = 0.25
+SLEEP_SEC       = 1
 PRINT_HEARTBEAT = True
 
 # ========= SESSION =========
@@ -187,11 +187,11 @@ def main():
     # Init dynamic plot
     fig, ax, line_ngn, line_whel, line_gear = init_live_plot()
 
-    ma_list = {NGN: [mid_price(NGN)]*20, WHEL: [mid_price(WHEL)]*20, GEAR:[mid_price(GEAR)]*20}  # list of historical moving averages
+    days = 3  # Amount of days moving average is calculated on
+    ma_list = {NGN: [mid_price(NGN)]*days, WHEL: [mid_price(WHEL)]*days, GEAR:[mid_price(GEAR)]*days}  # list of historical moving averages
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
     ma_change_per = {NGN: [], WHEL: [], GEAR: []}
-    days = 20  # Amount of days moving average is calculated on
     ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold = 0  # Spread threshold, modifiable
@@ -206,7 +206,7 @@ def main():
         return alpha * price + (1 - alpha) * ma_yest
 
     def order_size(stk, spread):
-        return 2000
+        return 5000
 
     # Run while case active
     tick, status = get_tick_status()
@@ -233,8 +233,8 @@ def main():
             ma_net_change = 0
 
 
-            if ticks >= 15:
-                ma_net_change = sum(ma_change_per[i][-10:])/10
+            if ticks >= 3:
+                ma_net_change = sum(ma_change_per[i][-3:])/3
 
             def trade(stk):
                 print(ma_net_change)
