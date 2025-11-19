@@ -168,24 +168,8 @@ def update_live_plot(ax, line_ngn, line_whel, line_gear, ticks, series_ngn, seri
 
 # ========= MAIN =========
 def main():
-    # Load historical once to get betas
-    df_hist = load_historical()
-    if df_hist is None:
-        return
-    beta_map = print_three_tables_and_betas(df_hist)   # dict with betas
 
-    # Live PTD bases (first-seen mids)
-    base_idx = None
-    base_ngn = None
-    base_whe = None
-    base_ger = None
 
-    # Data buffers for live plot
-    ticks = []
-    div_ngn_list, div_whe_list, div_ger_list = [], [], []
-
-    # Init dynamic plot
-    fig, ax, line_ngn, line_whel, line_gear = init_live_plot()
 
     ma_list = {NGN: [mid_price(NGN)]*20, WHEL: [mid_price(WHEL)]*20, GEAR:[mid_price(GEAR)]*20}  # list of historical moving averages
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
@@ -195,8 +179,8 @@ def main():
     ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold =  0 # Spread threshold, modifiable
-    growth_threshold_up = 0.00002 # Average growth rate in moving average required to justify trade
-    growth_threshold_down = -0.00002 # Average growth rate in moving average required to justify trade
+    growth_threshold_up = 0.0002 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = -0.0002 # Average growth rate in moving average required to justify trade
     previous_tick = -1
 
     def moving_avg(stk, ma_yest):
@@ -209,7 +193,7 @@ def main():
 
     def order_size(stk):
 
-        BASE_SIZE = 5000
+        BASE_SIZE = 10000
         curr_pos = positions_map()[stk]
 
         pos_factor = abs(curr_pos) / NET_LIMIT_SH
@@ -248,10 +232,7 @@ def main():
 
             ma_net_change = 0
             
-            
-            print( 0 <= growth_threshold_down - ma_net_change)
 
-        
             if ticks >= 15:
                 ma_net_change = sum(ma_change_per[i][-10:])/10
 
@@ -260,7 +241,7 @@ def main():
                     place_mkt(i, "BUY", order_size(i))
 
                 elif stock_mid[i] > ma[i] and ma_net_change < growth_threshold_down:
-                    place_mkt(i, "SELL", positions_map()[i])
+                    place_mkt(i, "SELL", order_size(i))
 
             if tick == previous_tick:
                 pass
