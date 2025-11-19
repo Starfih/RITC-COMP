@@ -26,10 +26,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from time import sleep
 import matplotlib.pyplot as plt
-from sklearn import metrics
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss, accuracy_score
-from sklearn.model_selection import train_test_split
 
 # ========= CONFIG =========
 API = "http://localhost:9999/v1"
@@ -37,6 +33,9 @@ API_KEY = "Rotman"
 HDRS = {"X-API-key": API_KEY}
 
 NGN, WHEL, GEAR, RSM1000 = "NGN", "WHEL", "GEAR", "RSM1000"
+
+
+entry_price = {NGN: None, WHEL: None, GEAR: None}
 
 FEE_MKT = 0.01          # $/share (market)
 ORDER_SIZE      = 5000
@@ -143,12 +142,6 @@ def print_three_tables_and_betas(df_hist):
     print(vol_beta_df.to_string())
     return beta_map
 
-def update_historical(database):
-    row = [best_bid_ask("RSM1000"), best_bid_ask("NGN"), best_bid_ask("WHEL"), best_bid_ask("GEAR")]
-    database = pd.concat([row, database], ignore_index=True)
-
-    return database.reset_index(drop=True)
-
 # ========= DYNAMIC PLOT (single figure, 3 lines) =========
 def init_live_plot():
     plt.ion()  # interactive mode on
@@ -176,25 +169,122 @@ def update_live_plot(ax, line_ngn, line_whel, line_gear, ticks, series_ngn, seri
     ax.autoscale_view()
     plt.pause(0.01)  # let GUI process events
 
+def check_stop_loss(stk, stop_pct=0.01):  # 1% stop default
+    curr_pos = positions_map()[stk]
+    if curr_pos == 0:
+        return False  # nothing to stop out
+
+    curr_price = mid_price(stk)
+    if curr_price is None:
+        return False
+
+    entry = entry_price[stk]
+    if entry is None:
+        return False
+
+    # Long position stop-loss
+    if curr_pos > 0:
+        if curr_price <= entry * (1 - stop_pct):
+            return "STOP_LONG"
+
+    # Short position stop-loss
+    if curr_pos < 0:
+        if curr_price >= entry * (1 + stop_pct):
+            return "STOP_SHORT"
+
+    return False
 
 
 # ========= MAIN =========
 def main():
 
 
-    histdata = load_historical()
 
-    df = pd.DataFrame({
-    "Tick": histdata["Tick"].values,
-    "RSM1000": histdata["RSM1000"].values,
-    "NGN": histdata["NGN"].values,
-    "WHEL": histdata["WHEL"].values,
-    "GEAR": histdata["GEAR"].values
-    })
+    ma_list = {NGN: [mid_price(NGN)]*20, WHEL: [mid_price(WHEL)]*20, GEAR:[mid_price(GEAR)]*20}  # list of historical moving averages
+    ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
+    hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
+    ma_change_per = {NGN: [], WHEL: [], GEAR: []}
+    days =  30  # Amount of days moving average is calculated on
+    ticks = 0
+    volume = {NGN: 0, WHEL: 0, GEAR: 0}
+    spread_threshold =  0 # Spread threshold, modifiable
+    growth_threshold_up = 0.0002 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = -0.0002 # Average growth rate in moving average required to justify trade
+    previous_tick = -1
 
-    df.to_csv("five_arrays.csv", index=False)
-    print("Saved historical data to five_arrays.csv")
+    def moving_avg(stk, ma_yest):
+        price = mid_price(stk)
+        if price is None:
+            return ma_yest  # don't break if book empty
 
-    
+        alpha = 2 / (days + 1)  # smoothing factor
+        return alpha * price + (1 - alpha) * ma_yest
 
-main()
+    def order_size(stk):
+
+        BASE_SIZE = 10000
+        curr_pos = positions_map()[stk]
+
+        pos_factor = abs(curr_pos) / NET_LIMIT_SH
+        inv_factor = max(0.1, 1 - pos_factor)  
+
+
+
+        # === Combined size ===
+        size = int(BASE_SIZE * inv_factor)
+
+        # Make sure size is at least some minimum
+        return max(2000, size)
+
+
+    # Run while case active
+    tick, status = get_tick_status()
+    while status == "ACTIVE":
+        # current mids
+        mid_idx = mid_price(RSM1000)
+        mid_ngn = mid_price(NGN)
+        mid_whe = mid_price(WHEL)
+        mid_ger = mid_price(GEAR)
+
+        stock_mid = {NGN: mid_ngn, WHEL: mid_whe, GEAR: mid_ger}  # mid bid/ask price of stocks
+
+        for i in [NGN, WHEL, GEAR]:
+
+            bid, ask = best_bid_ask(i)
+            spread = ask - bid
+            hist[i].append(stock_mid[i])
+
+
+            ma[i] = moving_avg(i, ma_list[i][-1])
+            ma_list[i].append(ma[i])
+            ma_change_per[i].append((ma_list[i][-1] - ma_list[i][-2]) / ma_list[i][-1])  # adds change in moving averages in percent
+
+            ma_net_change = 0
+
+            if ticks >= 15:
+                ma_net_change = sum(ma_change_per[i][-10:])/10\
+
+            def trade(stk):
+                if stock_mid[i] < ma[i] and ma_net_change > growth_threshold_up:
+                    place_mkt(i, "BUY", order_size(i))
+
+                elif stock_mid[i] > ma[i] and ma_net_change < growth_threshold_down:
+                    place_mkt(i, "SELL", order_size(i))
+
+ 
+            trade(i)
+                
+
+        print(ma_net_change)
+        previous_tick = tick
+        sleep(SLEEP_SEC)
+        tick, status = get_tick_status()
+        ticks += 1
+
+    # Keep the final chart on screen after loop ends
+    plt.ioff()
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
