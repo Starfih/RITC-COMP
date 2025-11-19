@@ -196,7 +196,7 @@ def main():
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold =  0 # Spread threshold, modifiable
     growth_threshold_up = 0.00002 # Average growth rate in moving average required to justify trade
-    growth_threshold_down = -0.00002 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = -0.010 # Average growth rate in moving average required to justify trade
     previous_tick = -1
 
     def moving_avg(stk, ma_yest):
@@ -208,7 +208,25 @@ def main():
         return alpha * price + (1 - alpha) * ma_yest
 
     def order_size(stk, spread):
-        return 10000
+
+        BASE_SIZE = 1000
+
+        if spread <= 1:
+            spread_factor = 1.0          
+        elif spread <= 2:
+            spread_factor = 0.7
+        elif spread <= 3:
+            spread_factor = 0.4
+        else:
+            spread_factor = 0.2          
+
+
+        # === Combined size ===
+        size = int(BASE_SIZE * spread_factor)
+
+        # Make sure size is at least some minimum
+        return max(2000, size)
+
 
     # Run while case active
     tick, status = get_tick_status()
@@ -233,7 +251,8 @@ def main():
             ma_change_per[i].append((ma_list[i][-1] - ma_list[i][-2]) / ma_list[i][-1])  # adds change in moving averages in percent
 
             ma_net_change = 0
-
+            
+            
         
 
             if ticks >= 15:
@@ -243,14 +262,13 @@ def main():
                 
                 print(ma_net_change)
 
-                if within_limits() == True or within_limits() == False:
 
-                    if stock_mid[i] > ma[i] and ma_net_change > growth_threshold_up:
-                        place_mkt(i, "BUY", order_size(i,spread))
+                if stock_mid[i] > ma[i] and ma_net_change > growth_threshold_up:
+                    place_mkt(i, "BUY", order_size(i,spread))
 
 
-                    elif stock_mid[i] > ma[i] and ma_net_change < growth_threshold_down:
-                        place_mkt(i, "SELL", order_size(i,spread))
+                elif stock_mid[i] < ma[i] and ma_net_change < growth_threshold_down:
+                    place_mkt(i, "SELL", order_size(i,spread))
 
 
             if tick == previous_tick:
