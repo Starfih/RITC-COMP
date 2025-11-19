@@ -187,7 +187,7 @@ def main():
     # Init dynamic plot
     fig, ax, line_ngn, line_whel, line_gear = init_live_plot()
 
-    days = 3  # Amount of days moving average is calculated on
+    days = 5  # Amount of days moving average is calculated on
     ma_list = {NGN: [mid_price(NGN)]*days, WHEL: [mid_price(WHEL)]*days, GEAR:[mid_price(GEAR)]*days}  # list of historical moving averages
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
@@ -206,7 +206,7 @@ def main():
         return alpha * price + (1 - alpha) * ma_yest
 
     def order_size(stk, spread):
-        return 5000
+        return 10000
 
     # Run while case active
     tick, status = get_tick_status()
@@ -233,17 +233,17 @@ def main():
             ma_net_change = 0
 
 
-            if ticks >= 3:
-                ma_net_change = sum(ma_change_per[i][-3:])/3
+            if ticks >= days:
+                ma_net_change = sum(ma_change_per[i][-days:])/days
 
             def trade(stk):
                 print(ma_net_change)
                 print(stock_mid[i])
                 print(ma[i])
                 if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold:
-                    place_mkt(i, "SELL", order_size(i,spread))
-                elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < growth_threshold:
-                    place_mkt(i,"BUY",order_size(i,spread))
+                    place_mkt(i, "BUY", order_size(i,spread))
+                elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < -growth_threshold:
+                    place_mkt(i,"SELL",order_size(i,spread))
 
             trade(i);
 
