@@ -70,12 +70,22 @@ def mid_price(ticker):
         return None
     return 0.5 * (bid + ask)
 
-def positions_map():
+def positions_map(call):
     r = s.get(f"{API}/securities"); r.raise_for_status()
     out = {p["ticker"]: int(p.get("position", 0)) for p in r.json()}
+    vwap = {p["ticker"]: float(p.get("vwap", 0.0)) for p in r.json()}
+
     for k in (NGN, WHEL, GEAR, RSM1000):
         out.setdefault(k, 0)
-    return out
+        vwap.setdefault(k, 0.0)
+
+    if call == 'portfolio':
+        return out
+    elif call == 'vwap':
+        return vwap
+    
+    elif call == 'both':
+        return out, vwap
 
 def place_mkt(ticker, action, qty):
     qty = int(max(1, min(qty, MAX_TRADE_SIZE)))
@@ -91,6 +101,8 @@ def within_limits():
     gross = abs(pos[NGN]) + abs(pos[WHEL]) + abs(pos[GEAR])
     net   = pos[NGN] + pos[WHEL] + pos[GEAR]
     return ((gross) < GROSS_LIMIT_SH) and (abs(net) < NET_LIMIT_SH)
+
+
 
 # ========= HISTORICAL (tables + betas) =========
 def load_historical():
@@ -169,49 +181,23 @@ def update_live_plot(ax, line_ngn, line_whel, line_gear, ticks, series_ngn, seri
     ax.autoscale_view()
     plt.pause(0.01)  # let GUI process events
 
-def check_stop_loss(stk, stop_pct=0.01):  # 1% stop default
-    curr_pos = positions_map()[stk]
-    if curr_pos == 0:
-        return False  # nothing to stop out
-
-    curr_price = mid_price(stk)
-    if curr_price is None:
-        return False
-
-    entry = entry_price[stk]
-    if entry is None:
-        return False
-
-    # Long position stop-loss
-    if curr_pos > 0:
-        if curr_price <= entry * (1 - stop_pct):
-            return "STOP_LONG"
-
-    # Short position stop-loss
-    if curr_pos < 0:
-        if curr_price >= entry * (1 + stop_pct):
-            return "STOP_SHORT"
-
-    return False
-
 
 # ========= MAIN =========
 def main():
-
-
 
     ma_list = {NGN: [mid_price(NGN)]*20, WHEL: [mid_price(WHEL)]*20, GEAR:[mid_price(GEAR)]*20}  # list of historical moving averages
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
     ma_change_per = {NGN: [], WHEL: [], GEAR: []}
-    days =  30  # Amount of days moving average is calculated on
+    days =  40  # Amount of days moving average is calculated on
     ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold =  0 # Spread threshold, modifiable
-    growth_threshold_up = 0.0002 # Average growth rate in moving average required to justify trade
-    growth_threshold_down = -0.0002 # Average growth rate in moving average required to justify trade
+    growth_threshold_up = 0.0001 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = -0.0001 # Average growth rate in moving average required to justify trade
     previous_tick = -1
 
+    
     def moving_avg(stk, ma_yest):
         price = mid_price(stk)
         if price is None:
@@ -223,9 +209,9 @@ def main():
     def order_size(stk):
 
         BASE_SIZE = 10000
-        curr_pos = positions_map()[stk]
+        curr_pos = positions_map('portfolio')[stk]
 
-        pos_factor = abs(curr_pos) / NET_LIMIT_SH
+        pos_factor = abs(curr_pos) / GROSS_LIMIT_SH
         inv_factor = max(0.1, 1 - pos_factor)  
 
 
@@ -261,21 +247,56 @@ def main():
 
             ma_net_change = 0
 
-            if ticks >= 15:
-                ma_net_change = sum(ma_change_per[i][-10:])/10\
+            if ticks >= 1:
+                ma_net_change = sum(ma_change_per[i][-10:])/10
 
             def trade(stk):
                 if stock_mid[i] < ma[i] and ma_net_change > growth_threshold_up:
                     place_mkt(i, "BUY", order_size(i))
+                
 
                 elif stock_mid[i] > ma[i] and ma_net_change < growth_threshold_down:
                     place_mkt(i, "SELL", order_size(i))
+                 
+
 
  
             trade(i)
-                
+        
+            position, vwap = positions_map('both')
 
-        print(ma_net_change)
+            if vwap[i] != 0:
+                deviation = mid_price(i) - vwap[i]
+            else:
+                deviation = 0
+
+            exit_factor= 0.5  # Percentage difference required to exit position
+            profit_t = 0.8  # Percentage profit target to exit position
+
+            profit_target = profit_t - max(0.3, abs(position[i])/NET_LIMIT_SH)
+            
+
+            if deviation > 0:
+                if deviation > profit_target and position[i] > 0:
+                    place_mkt(i, "SELL", max(1000, abs(position[i])))
+
+                elif deviation > exit_factor and position[i] < 0:
+                    place_mkt(i, "BUY", max(abs(position[i]), 1000))
+               
+            
+            elif deviation < 0:
+                if abs(deviation) > profit_target and position[i] < 0:
+                    place_mkt(i, "BUY", max(1000, abs(position[i])))
+
+                elif abs(deviation) > exit_factor and position[i] > 0:
+                    place_mkt(i, "SELL", max(abs(position[i]), 1000))
+
+
+
+
+        
+
+
         previous_tick = tick
         sleep(SLEEP_SEC)
         tick, status = get_tick_status()
