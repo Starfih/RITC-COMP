@@ -207,22 +207,18 @@ def main():
         alpha = 2 / (days + 1)  # smoothing factor
         return alpha * price + (1 - alpha) * ma_yest
 
-    def order_size(stk, spread):
+    def order_size(stk):
 
-        BASE_SIZE = 1000
+        BASE_SIZE = 5000
+        curr_pos = positions_map()[stk]
 
-        if spread <= 1:
-            spread_factor = 1.0          
-        elif spread <= 2:
-            spread_factor = 0.7
-        elif spread <= 3:
-            spread_factor = 0.4
-        else:
-            spread_factor = 0.2          
+        pos_factor = abs(curr_pos) / NET_LIMIT_SH
+        inv_factor = max(0.1, 1 - pos_factor)  
+
 
 
         # === Combined size ===
-        size = int(BASE_SIZE * spread_factor)
+        size = int(BASE_SIZE * inv_factor)
 
         # Make sure size is at least some minimum
         return max(2000, size)
@@ -252,32 +248,25 @@ def main():
 
             ma_net_change = 0
             
-            
+            print(spread)
         
 
             if ticks >= 15:
                 ma_net_change = sum(ma_change_per[i][-10:])/10
 
             def trade(stk):
-                
-                print(ma_net_change)
-
-
                 if stock_mid[i] > ma[i] and ma_net_change > growth_threshold_up:
-                    place_mkt(i, "BUY", order_size(i,spread))
-
+                    place_mkt(i, "BUY", order_size(i))
 
                 elif stock_mid[i] < ma[i] and ma_net_change < growth_threshold_down:
-                    place_mkt(i, "SELL", order_size(i,spread))
-
+                    place_mkt(i, "SELL", positions_map()[i])
 
             if tick == previous_tick:
                 pass
             else:
                 trade(i);
         
-        print(positions_map())
-
+        
         previous_tick = tick
         sleep(SLEEP_SEC)
         tick, status = get_tick_status()
