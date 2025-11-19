@@ -191,12 +191,12 @@ def main():
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
     ma_change_per = {NGN: [], WHEL: [], GEAR: []}
-    days = 30  # Amount of days moving average is calculated on
+    days = 50  # Amount of days moving average is calculated on
     ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
-    spread_threshold = 0  # Spread threshold, modifiable
+    spread_threshold =  0 # Spread threshold, modifiable
     growth_threshold_up = 0 # Average growth rate in moving average required to justify trade
-    growth_threshold_down = 10 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = 0 # Average growth rate in moving average required to justify trade
     previous_tick = -1
 
     def moving_avg(stk, ma_yest):
@@ -208,7 +208,7 @@ def main():
         return alpha * price + (1 - alpha) * ma_yest
 
     def order_size(stk, spread):
-        return 2000
+        return 10000
 
     # Run while case active
     tick, status = get_tick_status()
@@ -244,15 +244,19 @@ def main():
                 print(stock_mid[i])
                 print(ma[i])
                 if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold_up:
-                    place_mkt(i, "SELL", order_size(i,spread))
+                    if within_limits():
+                        place_mkt(i, "SELL", order_size(i,spread))
                 elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < growth_threshold_down:
-                    place_mkt(i,"BUY", order_size(i,spread))
+                    if within_limits():
+                        place_mkt(i,"BUY", order_size(i,spread))
 
             if tick == previous_tick:
                 pass
             else:
                 trade(i);
         
+        print(positions_map())
+
         previous_tick = tick
         sleep(SLEEP_SEC)
         tick, status = get_tick_status()
