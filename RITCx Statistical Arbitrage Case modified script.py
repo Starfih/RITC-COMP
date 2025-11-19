@@ -34,6 +34,9 @@ HDRS = {"X-API-key": API_KEY}
 
 NGN, WHEL, GEAR, RSM1000 = "NGN", "WHEL", "GEAR", "RSM1000"
 
+
+entry_price = {NGN: None, WHEL: None, GEAR: None}
+
 FEE_MKT = 0.01          # $/share (market)
 ORDER_SIZE      = 5000
 MAX_TRADE_SIZE  = 10_000
@@ -166,6 +169,32 @@ def update_live_plot(ax, line_ngn, line_whel, line_gear, ticks, series_ngn, seri
     ax.autoscale_view()
     plt.pause(0.01)  # let GUI process events
 
+def check_stop_loss(stk, stop_pct=0.01):  # 1% stop default
+    curr_pos = positions_map()[stk]
+    if curr_pos == 0:
+        return False  # nothing to stop out
+
+    curr_price = mid_price(stk)
+    if curr_price is None:
+        return False
+
+    entry = entry_price[stk]
+    if entry is None:
+        return False
+
+    # Long position stop-loss
+    if curr_pos > 0:
+        if curr_price <= entry * (1 - stop_pct):
+            return "STOP_LONG"
+
+    # Short position stop-loss
+    if curr_pos < 0:
+        if curr_price >= entry * (1 + stop_pct):
+            return "STOP_SHORT"
+
+    return False
+
+
 # ========= MAIN =========
 def main():
 
@@ -231,7 +260,6 @@ def main():
             ma_change_per[i].append((ma_list[i][-1] - ma_list[i][-2]) / ma_list[i][-1])  # adds change in moving averages in percent
 
             ma_net_change = 0
-            
 
             if ticks >= 15:
                 ma_net_change = sum(ma_change_per[i][-10:])/10\
@@ -243,10 +271,8 @@ def main():
                 elif stock_mid[i] > ma[i] and ma_net_change < growth_threshold_down:
                     place_mkt(i, "SELL", order_size(i))
 
-            if tick == previous_tick:
-                pass
-            else:
-                trade(i)
+ 
+            trade(i)
                 
 
         print(ma_net_change)
