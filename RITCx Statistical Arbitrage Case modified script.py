@@ -191,11 +191,13 @@ def main():
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
     ma_change_per = {NGN: [], WHEL: [], GEAR: []}
-    days = 20  # Amount of days moving average is calculated on
+    days = 30  # Amount of days moving average is calculated on
     ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold = 0  # Spread threshold, modifiable
-    growth_threshold = 0 # Average growth rate in moving average required to justify trade
+    growth_threshold_up = 0 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = 10 # Average growth rate in moving average required to justify trade
+    previous_tick = -1
 
     def moving_avg(stk, ma_yest):
         price = mid_price(stk)
@@ -237,16 +239,21 @@ def main():
                 ma_net_change = sum(ma_change_per[i][-10:])/10
 
             def trade(stk):
+                
                 print(ma_net_change)
                 print(stock_mid[i])
                 print(ma[i])
-                if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold:
+                if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold_up:
                     place_mkt(i, "SELL", order_size(i,spread))
-                elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < growth_threshold:
-                    place_mkt(i,"BUY",order_size(i,spread))
+                elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < growth_threshold_down:
+                    place_mkt(i,"BUY", order_size(i,spread))
 
-            trade(i);
-
+            if tick == previous_tick:
+                pass
+            else:
+                trade(i);
+        
+        previous_tick = tick
         sleep(SLEEP_SEC)
         tick, status = get_tick_status()
         ticks += 1
@@ -254,6 +261,7 @@ def main():
     # Keep the final chart on screen after loop ends
     plt.ioff()
     plt.show()
+
 
 if __name__ == "__main__":
     main()
