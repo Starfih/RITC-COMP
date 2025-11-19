@@ -187,12 +187,12 @@ def main():
     # Init dynamic plot
     fig, ax, line_ngn, line_whel, line_gear = init_live_plot()
 
-    ma_list = {NGN: [], WHEL: [], GEAR:[]}  # list of historical moving averages
+    ma_list = {NGN: [mid_price(NGN)], WHEL: [mid_price(WHEL)], GEAR:[mid_price(GEAR)]}  # list of historical moving averages
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
     ma_change_per = {NGN: [], WHEL: [], GEAR: []}
     days = 20  # Amount of days moving average is calculated on
-    tick = 0
+    ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold = 0  # Spread threshold, modifiable
     growth_threshold = 0 # Average growth rate in moving average required to justify trade
@@ -221,12 +221,16 @@ def main():
             spread = ask - bid
             hist[i].append(stock_mid[i])
 
-            if tick >= 20:
-                ma = moving_avg(i, ma_list[i][-1])
-                ma_list[i].append(ma)
-                ma_change_per[i].append(((ma_list[i][-1] - ma_list[i][-2]) / ma_list[i][-1]) - 1)  # adds change in moving averages in percenT
 
-            ma_net_change = np.average(ma_change_per[-20:-1])
+            ma[i] = moving_avg(i, ma_list[i][-1])
+            ma_list[i].append(ma[i])
+            print(ma_list[i])
+            ma_change_per[i].append(((ma_list[i][-1] - ma_list[i][-2]) / ma_list[i][-1]) - 1)  # adds change in moving averages in percent
+
+            ma_net_change = 0
+
+            if ticks >= 20:
+                ma_net_change = np.average(ma_change_per[-19:])
 
             def trade(stk):
                 if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold:
@@ -238,6 +242,7 @@ def main():
 
         sleep(SLEEP_SEC)
         tick, status = get_tick_status()
+        ticks += 1
 
     # Keep the final chart on screen after loop ends
     plt.ioff()
