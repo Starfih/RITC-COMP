@@ -243,11 +243,11 @@ def main():
                 print(ma_net_change)
                 print(stock_mid[i])
                 print(ma[i])
-                if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold_up:
-                    if within_limits():
+
+                if within_limits() == True:
+                    if stock_mid[i] < ma[i] and spread > spread_threshold and ma_net_change > growth_threshold_up:
                         place_mkt(i, "SELL", order_size(i,spread))
-                elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < growth_threshold_down:
-                    if within_limits():
+                    elif stock_mid[i] > ma[i] and spread > spread_threshold and ma_net_change < growth_threshold_down:
                         place_mkt(i,"BUY", order_size(i,spread))
 
             if tick == previous_tick:
