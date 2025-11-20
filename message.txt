@@ -267,7 +267,6 @@ def main():
         
 
 
-
     # Run while case active
     tick, status = get_tick_status()
     while status == "ACTIVE":
