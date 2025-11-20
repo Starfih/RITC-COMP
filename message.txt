@@ -74,13 +74,17 @@ def positions_map(call_type):
     r = s.get(f"{API}/securities"); r.raise_for_status()
     out = {p["ticker"]: int(p.get("position", 0)) for p in r.json()}
     unrealized = {p["ticker"]: int(p.get("unrealized", 0)) for p in r.json()}
+    vwap = {p["ticker"]: int(p.get("vwap", 0)) for p in r.json()}
     for k in (NGN, WHEL, GEAR, RSM1000):
         out.setdefault(k, 0)
         unrealized.setdefault(k, 0)
+        vwap.setdefault(k, 0)
     if call_type == 'unrealized':
         return unrealized
     if call_type == 'out':
         return out
+    if call_type == 'vwap':
+        return vwap
 
 def place_mkt(ticker, action, qty):
     qty = int(max(1, min(qty, MAX_TRADE_SIZE)))
@@ -232,22 +236,24 @@ def main():
         # Profit-taking threshold
         target_gain = 0.08   # 8% return
 
-        # Cost = position * vwap
-        cost = abs(position) * pm[stk]["cost_basis"]
+        # Cost = vwap
+        cost = positions_map("vwap")[stk]
 
         # Actual return
-        pnl_pct = unrealized / cost
+        pnl_pct = cost/position
 
         # If profit % exceeds threshold → exit
         if pnl_pct >= target_gain:
 
             if position > 0:
                 place_mkt(stk, "SELL", abs(position))
-                print(f"TAKE PROFIT LONG {stk}: +{pnl_pct:.2%}")
+                print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+         
 
             elif position < 0:
                 place_mkt(stk, "BUY", abs(position))
-                print(f"TAKE PROFIT SHORT {stk}: +{pnl_pct:.2%}")
+                print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+         
 
 
     # Run while case active
@@ -293,7 +299,7 @@ def main():
                 profit_take(i)
                 
           
-        print(ma_delta)
+       
         previous_tick = tick
         sleep(SLEEP_SEC)
         tick, status = get_tick_status()
