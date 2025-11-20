@@ -44,7 +44,7 @@ GROSS_LIMIT_SH  = 500_000
 NET_LIMIT_SH    = 100_000
 ENTRY_BAND_PCT  = 0.10   # enter if |div| > 0.50%
 EXIT_BAND_PCT   = -0.1   # flatten if |div| < 0.20%
-SLEEP_SEC       = 0.25
+SLEEP_SEC       = 1
 PRINT_HEARTBEAT = True
 
 # ========= SESSION =========
