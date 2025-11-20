@@ -187,8 +187,10 @@ def main():
 
     ma_list_s = {NGN: [mid_price(NGN)]*20, WHEL: [mid_price(WHEL)]*20, GEAR:[mid_price(GEAR)]*20}  # list of historical moving averages, long
     ma_list_l = {NGN: [mid_price(NGN)]*20, WHEL: [mid_price(WHEL)]*20, GEAR:[mid_price(GEAR)]*20}
+    ma_list_d = {NGN: [mid_price(NGN)]*20, WHEL: [mid_price(WHEL)]*20, GEAR:[mid_price(GEAR)]*20}
     ma_s = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     ma_l = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
+    ma_d = {NGN: 0, WHEL: 0, GEAR: 0}
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
     days_s =  20  # Amount of days short moving average is calculated on
     days_l = 30 #Amount of days long moving average is calculated on
@@ -205,11 +207,12 @@ def main():
 
         alpha = 2 / (days + 1)  # smoothing factor
         return alpha * price + (1 - alpha) * ma_yest
+    
 
     def order_size(stk, delta):
 
-        base = 7000
-        scalar = 8000
+        base = 9000
+        scalar = 12000
         max = 10000
 
         size = int(base + scalar * abs(delta))
@@ -225,35 +228,44 @@ def main():
         position = positions_map("out")[stk]      # int
         unrealized =  positions_map("unrealized")[stk]
 
-        # No open position or no P/L data → skip
+
+
         if position == 0 or unrealized is None:
             return
 
-        # Only take profits if we are MAKING money
-        if unrealized <= 0:
-            return
-
         # Profit-taking threshold
-        target_gain = 0.08   # 8% return
-
-        # Cost = vwap
-        cost = positions_map("vwap")[stk]
+        target_gain = 0.3   # 30% return
+        target_loss = -0.2   # 20% loss ROI
 
         # Actual return
-        pnl_pct = cost/position
+        pnl_pct = unrealized/abs(position)
+
 
         # If profit % exceeds threshold → exit
         if pnl_pct >= target_gain:
 
             if position > 0:
                 place_mkt(stk, "SELL", abs(position))
-                print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+                print('profittaken')
          
 
             elif position < 0:
                 place_mkt(stk, "BUY", abs(position))
-                print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+                print('profittaken')
+
+        if pnl_pct <= target_loss:
+
+            if position > 0:
+                place_mkt(stk, "SELL", abs(position))
+                print('proflossn')
          
+
+            elif position < 0:
+                place_mkt(stk, "BUY", abs(position))
+                print('profitloss')
+
+        
+
 
 
     # Run while case active
@@ -273,26 +285,59 @@ def main():
 
             ma_s[i] = moving_avg(i, ma_list_s[i][-1], days_s)
             ma_l[i] = moving_avg(i, ma_list_l[i][-1], days_l)
+            ma_d[i] = moving_avg(i, ma_list_d[i][-1], 10)
+
             ma_list_s[i].append(ma_s[i])
             ma_list_l[i].append(ma_l[i])
-
+            ma_list_d[i].append(ma_d[i])
+           
+            
+            
             ma_delta = ma_s[i]-ma_l[i]
 
+
+            upper_band = 0 
+            lower_band = 0
+            window = 10
+            
+
+            if len(ma_list_d[i]) >= window:
+                data = ma_list_d[i][-window:] 
+
+                mean = np.mean(data)
+                stdev = np.std(data)
+
+                upper_band = mean + 2 * stdev
+                lower_band = mean - 2 * stdev
+
+            
+          
             def trade(i):
                 macd = ma_delta
+                repeat = 1
+
+                qty = order_size(i, ma_delta)
+            
+                if abs(macd) >= 0.1:
+                    qty = 10000
+                    repeat = 2
+         
+                    
                 #LONG ENTRY
-                if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
+                
+                if ma_s[i] > ma_l[i] and macd > growth_threshold_up and stock_mid[i] > upper_band:
                     qty = order_size(i, ma_delta)
-                    for j in range(1):
+                    for j in range(repeat):
                         place_mkt(i, "BUY", qty)
                     last_order[i] = "BUY"
 
                 # SHORT ENTRY
-                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
+                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down and stock_mid[i] < lower_band:
                     qty = order_size(i, ma_delta)
-                    for j in range(1):
+                    for j in range(repeat):
                         place_mkt(i, "SELL", qty)
                     last_order[i] = "SELL"
+
 
             if tick >= 13 and tick != previous_tick:
                 trade(i)
@@ -301,7 +346,7 @@ def main():
           
        
         previous_tick = tick
-        sleep(0.12)
+        sleep(0.1)
         tick, status = get_tick_status()
         ticks += 1
 
