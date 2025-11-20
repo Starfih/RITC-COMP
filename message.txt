@@ -193,8 +193,8 @@ def main():
     days_s =  20  # Amount of days short moving average is calculated on
     days_l = 30 #Amount of days long moving average is calculated on
     ticks = 0
-    growth_threshold_up = 0.025 # Average difference in moving average required to justify trade
-    growth_threshold_down = -0.025 # Average difference in moving average required to justify trade
+    growth_threshold_up = 0.005 # Average difference in moving average required to justify trade
+    growth_threshold_down = -0.005 # Average difference in moving average required to justify trade
     previous_tick = -1
     last_order = {NGN: "NONE",WHEL: "NONE", GEAR: "NONE"}
 
@@ -208,7 +208,7 @@ def main():
 
     def order_size(stk, delta):
 
-        base = 8000
+        base = 5000
         scalar = 8000
         max = 10000
 
@@ -280,7 +280,7 @@ def main():
 
             def trade(i):
                 macd = ma_delta
-        
+                #LONG ENTRY
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
                     qty = order_size(i, ma_delta)
                     for j in range(1):
