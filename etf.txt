@@ -185,11 +185,11 @@ def main():
         ma_l = {BULL: 0, BEAR: 0, RITC: 0}  # moving averages
         ma_d = {BULL: 0, BEAR: 0, RITC: 0}
         hist = {BULL: [], BEAR: [], RITC: []}  # list of historical stock prices
-        days_s = 20  # Amount of days short moving average is calculated on
-        days_l = 30  # Amount of days long moving average is calculated on
+        days_s = 40  # Amount of days short moving average is calculated on
+        days_l = 60  # Amount of days long moving average is calculated on
         ticks = 0
-        growth_threshold_up = 0.005  # Average difference in moving average required to justify trade
-        growth_threshold_down = -0.005  # Average difference in moving average required to justify trade
+        growth_threshold_up = 0.02  # Average difference in moving average required to justify trade
+        growth_threshold_down = -0.02  # Average difference in moving average required to justify trade
         previous_tick = -1
         last_order = {BULL: "NONE", BEAR: "NONE", RITC: "NONE"}
 
@@ -215,7 +215,6 @@ def main():
 
         def profit_take(stk):
             
-      
 
             position = positions_map("out")[stk]      # int
             unrealized =  positions_map("unrealized")[stk]
@@ -226,7 +225,7 @@ def main():
 
             # Profit-taking threshold
             target_gain = 0.3   # 30% return
-            target_loss = -0.2   # 20% loss ROI
+            target_loss = -1   # 20% loss ROI
 
             # Actual return
             pnl_pct = unrealized/abs(position)
@@ -278,7 +277,7 @@ def main():
 
                 upper_band = 0 
                 lower_band = 0
-                window = 10
+                window = 25
 
                 if len(ma_list_d[i]) >= window:
                     data = ma_list_d[i][-window:] 
@@ -314,8 +313,8 @@ def main():
                             place_mkt(i, "SELL", qty)
 
                 if tick >= 13 and tick != previous_tick:
-                    print(ma_s)
-                    print(ma_l)
+                    # print(ma_s)
+                    # print(ma_l)
                     print(ma_delta)
                     trade(i)
                     profit_take(i)
