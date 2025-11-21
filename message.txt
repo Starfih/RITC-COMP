@@ -256,8 +256,8 @@ def main():
             return
 
         # Profit-taking threshold
-        target_gain = 0.35   # 50% return
-        target_loss = -0.5  # 30% loss ROI
+        target_gain = 0.4   # 50% return
+        target_loss = -0.4  # 30% loss ROI
 
         # Actual return
         pnl_pct = unrealized/abs(position)
@@ -382,28 +382,29 @@ def main():
                         qty = order_size(i, ma_delta)
                         place_mkt(i, "SELL", qty)
 
-                    return   
+                else:  
                 
-                if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
-                    qty = order_size(i, ma_delta)
-                    for j in range(repeat):
-                        place_mkt(i, "BUY", qty)
+                    if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
+                        qty = order_size(i, ma_delta)
+                        for j in range(repeat):
+                            place_mkt(i, "BUY", qty)
                    
 
-                # SHORT ENTRY
-                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
-                    qty = order_size(i, ma_delta)
-                    for j in range(repeat):
-                        place_mkt(i, "SELL", qty)
+                    # SHORT ENTRY
+                    elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
+                        qty = order_size(i, ma_delta)
+                        for j in range(repeat):
+                            place_mkt(i, "SELL", qty)
      
 
             if tick >= 0:
-                profit_take(i)
+                for m in range(10):
+                    profit_take(i)
                 trade(i)
        
             
             hist_prices.append(stock_mid[i])
-            sleep(0.1)
+            sleep(0.3)
           
        
         previous_tick = tick
