@@ -195,8 +195,8 @@ def main():
     days_s =  20  # Amount of days short moving average is calculated on
     days_l = 30 #Amount of days long moving average is calculated on
     ticks = 0
-    growth_threshold_up = 0.0012 # Average difference in moving average required to justify trade
-    growth_threshold_down = -0.0012 # Average difference in moving average required to justify trade
+    growth_threshold_up = 0.002 # Average difference in moving average required to justify trade
+    growth_threshold_down = -0.002 # Average difference in moving average required to justify trade
     previous_tick = -1
     last_order = {NGN: "NONE",WHEL: "NONE", GEAR: "NONE"}
 
@@ -211,11 +211,11 @@ def main():
 
     def order_size(stk, delta):
 
-        base = 10000
-        scalar = 9000
+        base = 7000
+        scalar = 20000
         max = 10000
 
-        size = int(base - scalar * abs(delta))
+        size = int(base + scalar * abs(delta))
         if size > max:
             return max
 
@@ -234,8 +234,8 @@ def main():
             return
 
         # Profit-taking threshold
-        target_gain = 0.35   # 50% return
-        target_loss = -0.2  # 30% loss ROI
+        target_gain = 0.43   # 50% return
+        target_loss = -0.28  # 30% loss ROI
 
         # Actual return
         pnl_pct = unrealized/abs(position)
@@ -306,14 +306,14 @@ def main():
                 mean = np.mean(data)
                 stdev = np.std(data)
 
-                upper_band = mean + 3 * stdev
-                lower_band = mean - 3 * stdev
+                upper_band = mean + 4 * stdev
+                lower_band = mean - 4 * stdev
 
           
             def trade(i):
                 macd = ma_delta
                 repeat = 1
-
+                vwap = positions_map("vwap")
                 qty = order_size(i, ma_delta)
             
                 if abs(macd) >= 0.11:
@@ -330,15 +330,16 @@ def main():
                    
 
                 # SHORT ENTRY
-                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down and stock_mid[i] < lower_band:
+                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down and stock_mid[i] < lower_band :
                     qty = order_size(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
      
 
             if tick >= 10 and previous_tick != tick:
-                trade(i)
                 profit_take(i)
+                trade(i)
+              
                 
           
        
