@@ -226,7 +226,7 @@ def main():
 
     def order_size(stk, delta):
 
-        base = MAX_SIZE_FX*0.8
+        base = MAX_SIZE_FX*0.7
         scalar = 5000000
         max = MAX_SIZE_FX
 
@@ -249,8 +249,8 @@ def main():
             return
 
         # Profit-taking threshold
-        target_gain = 0.4   # 50% return
-        target_loss = -0.5  # 30% loss ROI
+        target_gain = 0.43   # 50% return
+        target_loss = -0.28  # 30% loss ROI
 
         # Actual return
         pnl_pct = unrealized/abs(position)
@@ -285,26 +285,22 @@ def main():
     ma_s = {USD: 0}  # moving averages
     ma_l = {USD: 0}  # moving averages
     ma_d = {USD: 0}  # moving averages
+    days_s = 20  # Amount of days short moving average is calculated on
+    days_l = 30  # Amount of days long moving average is calculated on
+    ticks = 0
+    growth_threshold_up = 0.002  # Average difference in moving average required to justify trade
+    growth_threshold_down = -0.002  # Average difference in moving average required to justify trade
+    previous_tick = -1
 
     # Run while case active
 
     tick, status = get_tick_status()
     while status == "ACTIVE":
-        traded, e1, e2, info = step_once()
+        step_once()
         # Optional: print a lightweight heartbeat every 1s
         #print(f"tick={tick} e1={e1:.4f} e2={e2:.4f} ritc_ask_cad={info['ritc_ask_cad']:.4f}")
-        
-        tick, status = get_tick_status()
-
 
         mid_USD = mid_price(USD)
-   
-        days_s =  30  # Amount of days short moving average is calculated on
-        days_l = 60 #Amount of days long moving average is calculated on
-        ticks = 0
-        growth_threshold_up = 0 # Average difference in moving average required to justify trade
-        growth_threshold_down = 0 # Average difference in moving average required to justify trade
-        previous_tick = -1
 
         stock_mid = {USD: mid_USD }  # mid bid/ask price of stocks
 
@@ -328,7 +324,7 @@ def main():
 
             upper_band = 0 
             lower_band = 0
-            window = 15
+            window = 10
             
 
             if len(ma_list_d[i]) >= window:
@@ -337,8 +333,8 @@ def main():
                 mean = np.mean(data)
                 stdev = np.std(data)
 
-                upper_band = mean + 2 * stdev
-                lower_band = mean - 2 * stdev
+                upper_band = mean + 4 * stdev
+                lower_band = mean - 4 * stdev
 
           
             def trade(i):
@@ -367,8 +363,8 @@ def main():
                         print("sell" , qty)
 
             if tick >= 13 and tick != previous_tick:
-                trade(i)
                 profit_take(i)
+                trade(i)
                 
           
         
