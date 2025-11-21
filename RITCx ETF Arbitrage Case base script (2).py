@@ -209,6 +209,7 @@ def mid_price(ticker):
     bid, ask = best_bid_ask(ticker)
     if bid == 0.0 and ask == 1e12:
         return None
+    print
     return 0.5 * (bid + ask)
 
 def main():
@@ -278,7 +279,12 @@ def main():
                 place_mkt(stk, "BUY", abs(position))
                 #print('profitloss111111111')
 
-        
+    ma_list_s = {USD: [mid_price(USD)] * 10}  # list of historical moving averages, long
+    ma_list_l = {USD: [mid_price(USD)] * 10}
+    ma_list_d = {USD: [mid_price(USD)] * 10}
+    ma_s = {USD: 0}  # moving averages
+    ma_l = {USD: 0}  # moving averages
+    ma_d = {USD: 0}  # moving averages
 
     # Run while case active
 
@@ -290,17 +296,11 @@ def main():
         
         tick, status = get_tick_status()
 
-        ma_list_s = {USD: [mid_price(USD)]*20}  # list of historical moving averages, long
-        ma_list_l = {USD: [mid_price(USD)]*20}
-        ma_list_d = {USD: [mid_price(USD)]*20}
-        ma_s = {USD: 0}  # moving averages
-        ma_l = {USD: 0,}  # moving averages
-        ma_d = {USD: 0,}  # moving averages
 
         mid_USD = mid_price(USD)
    
-        days_s =  30  # Amount of days short moving average is calculated on
-        days_l = 60 #Amount of days long moving average is calculated on
+        days_s =  10  # Amount of days short moving average is calculated on
+        days_l = 120 #Amount of days long moving average is calculated on
         ticks = 0
         growth_threshold_up = 0 # Average difference in moving average required to justify trade
         growth_threshold_down = 0 # Average difference in moving average required to justify trade
@@ -312,7 +312,9 @@ def main():
 
     
             ma_s[i] = moving_avg(i, ma_list_s[i][-1], days_s)
+            print(ma_s[i])
             ma_l[i] = moving_avg(i, ma_list_l[i][-1], days_l)
+            print(ma_l[i])
             ma_d[i] = moving_avg(i, ma_list_d[i][-1], 10)
 
             ma_list_s[i].append(ma_s[i])
@@ -348,17 +350,16 @@ def main():
                 if abs(macd) >= 0.1:
                     qty = 10000
                     repeat = 2
-         
-                    
+
                 #LONG ENTRY
-                print(ma_s, ma_l, macd, upper_band, lower_band)
+
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up and stock_mid[i] > upper_band:
                     qty = order_size(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
                         print("buy" , qty)
 
-                # SHORT ENTRY
+                #SHORT ENTRY
                 elif ma_s[i] < ma_l[i] and macd < growth_threshold_down and stock_mid[i] < lower_band:
                     qty = order_size(i, ma_delta)
                     for j in range(repeat):
@@ -372,7 +373,7 @@ def main():
           
         
         previous_tick = tick
-        sleep(0.1)
+        sleep(0.2)
         tick, status = get_tick_status()
         ticks += 1
 
