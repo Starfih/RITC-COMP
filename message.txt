@@ -296,7 +296,8 @@ def main():
     
 
     vol_pct_list = {NGN: [], WHEL: [], GEAR: []}
-    vol_smooth_list = {NGN: [], WHEL: [], GEAR: []}
+    vol_smooth_list = {NGN: [0,0], WHEL: [0,0], GEAR: [0,0]}
+    
 
     while status == "ACTIVE":
         # current mids
@@ -363,17 +364,20 @@ def main():
                     
 
                     alpha = 0.2   # smoothing strength
-
-                    if len(vol_smooth[i]) == 0:
+                    if len(vol_smooth_list[i]) <= 2:
+                        # first point: no previous value, so just use current vol
                         smooth_vol = vol_pct
-                    else:
+                     else:
                         smooth_vol = alpha * vol_pct + (1 - alpha) * vol_smooth_list[i][-1]
-                
+         
                     vol_smooth[i].append(smooth_vol)
+
                     vol_pct_list[i].append(vol_pct)
-                    
+
                     threshold = np.percentile(vol_pct_list[i][-20:], 50)  # bottom 20%
+
                     low_vol = vol_pct < threshold
+
                     print(vol_pct, threshold)
 
                        
@@ -382,31 +386,36 @@ def main():
                     qty = 10000
                     repeat = 2
 
-           
+                
+                qty = order_size(i, ma_delta)
+                pos = positions_map("out")[i]
                     
                 if low_vol:
                     print("LOW VOL")
                     # mean reversion around VWAP
                     if stock_mid[i] < lower_band:
-                
-                        qty = order_size(i, ma_delta)
+                        if pos < 0:
+                            qty = abs(pos)
                         place_mkt(i, "BUY", qty)
 
                     elif stock_mid[i] > upper_band:
-                        qty = order_size(i, ma_delta)
+                        if pos > 0:
+                            qty = abs(pos)
                         place_mkt(i, "SELL", qty)
 
                 else:  
                 
                     if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
-                        qty = order_size(i, ma_delta)
+                        if pos < 0:
+                            qty = abs(pos)
                         for j in range(repeat):
                             place_mkt(i, "BUY", qty)
                    
 
                     # SHORT ENTRY
                     elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
-                        qty = order_size(i, ma_delta)
+                        if pos > 0:
+                            qty = abs(pos)
                         for j in range(repeat):
                             place_mkt(i, "SELL", qty)
      
@@ -417,7 +426,7 @@ def main():
                 trade(i)
        
             
-            hist_prices.append(stock_mid[i])
+            
             sleep(0.3)
           
        
