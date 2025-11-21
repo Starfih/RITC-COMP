@@ -299,8 +299,8 @@ def main():
 
         mid_USD = mid_price(USD)
    
-        days_s =  10  # Amount of days short moving average is calculated on
-        days_l = 120 #Amount of days long moving average is calculated on
+        days_s =  30  # Amount of days short moving average is calculated on
+        days_l = 60 #Amount of days long moving average is calculated on
         ticks = 0
         growth_threshold_up = 0 # Average difference in moving average required to justify trade
         growth_threshold_down = 0 # Average difference in moving average required to justify trade
