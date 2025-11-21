@@ -212,7 +212,7 @@ def main():
     def order_size(stk, delta):
 
         base = 7000
-        scalar = 20000
+        scalar = 30000
         max = 10000
 
         size = int(base + scalar * abs(delta))
@@ -344,7 +344,7 @@ def main():
           
        
         previous_tick = tick
-        sleep(0.3)
+        sleep(0.15)
         tick, status = get_tick_status()
         ticks += 1
 
