@@ -293,8 +293,10 @@ def main():
     # Run while case active
     tick, status = get_tick_status()
 
-    hist_prices = []
     
+
+    vol_pct_list = {NGN: [], WHEL: [], GEAR: []}
+    vol_smooth_list = {NGN: [], WHEL: [], GEAR: []}
 
     while status == "ACTIVE":
         # current mids
@@ -355,13 +357,25 @@ def main():
                     mean_p = 0
                     
                 if mean_p > 0:
-       
-                    std = recent.std(ddof=1)          # sample std
+                    
+                    std = recent.std(ddof=1)         
                     vol_pct = std / mean_p
-                 
-                    print(vol_pct)
-                    if vol_pct < 0.005:
-                        low_vol = True
+                    
+
+                    alpha = 0.2   # smoothing strength
+
+                    if len(vol_smooth[i]) == 0:
+                        smooth_vol = vol_pct
+                    else:
+                        smooth_vol = alpha * vol_pct + (1 - alpha) * vol_smooth_list[i][-1]
+                
+                    vol_smooth[i].append(smooth_vol)
+                    vol_pct_list[i].append(vol_pct)
+                    
+                    threshold = np.percentile(vol_pct_list[i][-20:], 50)  # bottom 20%
+                    low_vol = vol_pct < threshold
+                    print(vol_pct, threshold)
+
                        
             
                 if abs(macd) >= 0.10:

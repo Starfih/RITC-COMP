@@ -74,6 +74,7 @@ def positions_map(call):
     r = s.get(f"{API}/securities"); r.raise_for_status()
     out = {p["ticker"]: int(p.get("position", 0)) for p in r.json()}
     vwap = {p["ticker"]: float(p.get("vwap", 0.0)) for p in r.json()}
+    unrealized = {p["ticker"]: float(p.get("unrealized", 0)) for p in r.json()}
 
     for k in (NGN, WHEL, GEAR, RSM1000):
         out.setdefault(k, 0)
@@ -83,7 +84,8 @@ def positions_map(call):
         return out
     elif call == 'vwap':
         return vwap
-    
+    elif call == 'unrealized':
+        return unrealized
     elif call == 'both':
         return out, vwap
 
@@ -189,12 +191,12 @@ def main():
     ma = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
     ma_change_per = {NGN: [], WHEL: [], GEAR: []}
-    days =  30  # Amount of days moving average is calculated on
+    days =  12  # Amount of days moving average is calculated on
     ticks = 0
     volume = {NGN: 0, WHEL: 0, GEAR: 0}
     spread_threshold =  0 # Spread threshold, modifiable
-    growth_threshold_up = 0.000215 # Average growth rate in moving average required to justify trade
-    growth_threshold_down = -0.000215 # Average growth rate in moving average required to justify trade
+    growth_threshold_up = 0.00026 # Average growth rate in moving average required to justify trade
+    growth_threshold_down = -0.00026 # Average growth rate in moving average required to justify trade
     previous_tick = -1
 
     
@@ -208,7 +210,7 @@ def main():
 
     def order_size(stk):
 
-        BASE_SIZE = 10000
+        BASE_SIZE = 5000
         curr_pos = positions_map('portfolio')[stk]
 
         pos_factor = abs(curr_pos) / GROSS_LIMIT_SH
@@ -247,8 +249,9 @@ def main():
 
             ma_net_change = 0
 
+            net_change_factor = 10
             if ticks >= 1:
-                ma_net_change = sum(ma_change_per[i][-10:])/10
+                ma_net_change = sum(ma_change_per[i][-net_change_factor:])/net_change_factor
 
             def trade(stk):
                 if stock_mid[i] < ma[i] and ma_net_change > growth_threshold_up:
@@ -260,8 +263,9 @@ def main():
                  
 
 
- 
-            trade(i)
+            if previous_tick != tick:
+                for p in range(3):
+                    trade(i)
         
             position, vwap = positions_map('both')
 
@@ -274,28 +278,34 @@ def main():
             else:
                 deviation = 0
 
-            exit_factor= 1  # Percentage difference required to exit position
-            profit_t = 0.8  # Percentage profit target to exit position
+            exit_factor= 0.5# Percentage difference required to exit position
+            profit_t = 4  # Percentage profit target to exit position
 
-            profit_target = profit_t - max(0.3, abs(position[i])/NET_LIMIT_SH)
-            
+            profit_target = profit_t - max(0.01, abs(position[i])/NET_LIMIT_SH)
+        
 
             if deviation > 0:
                 if deviation > profit_target and position[i] > 0:
-                    place_mkt(i, "SELL", max(1000, abs(position[i])))
+                    place_mkt(i, "SELL", max(0, abs(position[i])))
 
                 elif deviation > exit_factor and position[i] < 0:
-                    place_mkt(i, "BUY", max(abs(position[i]), 1000))
+                    place_mkt(i, "BUY", max(abs(position[i]), 0))
                
             
             elif deviation < 0:
                 if abs(deviation) > profit_target and position[i] < 0:
-                    place_mkt(i, "BUY", max(1000, abs(position[i])))
+                    place_mkt(i, "BUY", max(0, abs(position[i])))
 
                 elif abs(deviation) > exit_factor and position[i] > 0:
-                    place_mkt(i, "SELL", max(abs(position[i]), 1000))
+                    place_mkt(i, "SELL", max(abs(position[i]), 0))
 
 
+        
+        if positions_map("unrealized") <= -15000:
+            if position[i] > 0:
+                place_mkt(i, "SELL", max(abs(position[i]), 0))
+            if position[i] < 0:
+                place_mkt(i, "BUY", max(abs(position[i]), 0))
 
 
         
