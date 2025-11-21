@@ -192,11 +192,11 @@ def main():
     ma_l = {NGN: 0, WHEL: 0, GEAR: 0}  # moving averages
     ma_d = {NGN: 0, WHEL: 0, GEAR: 0}
     hist = {NGN: [], WHEL: [], GEAR: []}  # list of historical stock prices
-    days_s =  20  # Amount of days short moving average is calculated on
-    days_l = 30 #Amount of days long moving average is calculated on
+    days_s =  40  # Amount of days short moving average is calculated on
+    days_l = 60 #Amount of days long moving average is calculated on
     ticks = 0
-    growth_threshold_up = 0.002 # Average difference in moving average required to justify trade
-    growth_threshold_down = -0.002 # Average difference in moving average required to justify trade
+    growth_threshold_up = 0.0002 # Average difference in moving average required to justify trade
+    growth_threshold_down = -0.0002 # Average difference in moving average required to justify trade
     previous_tick = -1
     last_order = {NGN: "NONE",WHEL: "NONE", GEAR: "NONE"}
 
@@ -211,13 +211,35 @@ def main():
 
     def order_size(stk, delta):
 
-        base = 7000
-        scalar = 30000
-        max = 10000
+        pos   = positions_map("out")
+        gross = abs(pos[NGN]) + abs(pos[WHEL]) + abs(pos[GEAR])
+        net   = pos[NGN] + pos[WHEL] + pos[GEAR]
 
-        size = int(base + scalar * abs(delta))
-        if size > max:
-            return max
+        base   = 10000
+        scalar = 14000
+        max_sz = 10000
+
+        GROSS_LIMIT = 500_000
+        NET_LIMIT   = 100_000
+
+
+        raw_size = base + scalar * abs(delta)
+
+
+ 
+        net_usage = (abs(net) / NET_LIMIT) + 0.25
+        net_scale = max(0.0, 1.0 - net_usage)
+
+   
+        size_scale =  net_scale
+
+   
+        size = int(raw_size * size_scale)
+
+        size = min(size, max_sz)
+
+        if size < 500:
+            size = 500
 
         return size
 
@@ -234,15 +256,15 @@ def main():
             return
 
         # Profit-taking threshold
-        target_gain = 0.43   # 50% return
-        target_loss = -0.28  # 30% loss ROI
+        target_gain = 0.35   # 50% return
+        target_loss = -0.5  # 30% loss ROI
 
         # Actual return
         pnl_pct = unrealized/abs(position)
 
 
         # If profit % exceeds threshold → exit
-        if pnl_pct >= target_gain and unrealized >= 10000:
+        if pnl_pct >= target_gain and unrealized >= 10000 or unrealized > 600000:
 
             if position > 0:
                 place_mkt(stk, "SELL", abs(position))
@@ -266,15 +288,21 @@ def main():
 
         
 
-
+    upper_band = 25
+    lower_band = 25 
     # Run while case active
     tick, status = get_tick_status()
+
+    hist_prices = []
+    
+
     while status == "ACTIVE":
         # current mids
         mid_idx = mid_price(RSM1000)
         mid_ngn = mid_price(NGN)
         mid_whe = mid_price(WHEL)
         mid_ger = mid_price(GEAR)
+        mean_p = 0
 
         stock_mid = {NGN: mid_ngn, WHEL: mid_whe, GEAR: mid_ger}  # mid bid/ask price of stocks
 
@@ -295,9 +323,8 @@ def main():
             ma_delta = ma_s[i]-ma_l[i]
 
 
-            upper_band = 0 
-            lower_band = 0
-            window = 10
+
+            window = 50
             
 
             if len(ma_list_d[i]) >= window:
@@ -306,45 +333,80 @@ def main():
                 mean = np.mean(data)
                 stdev = np.std(data)
 
-                upper_band = mean + 4 * stdev
-                lower_band = mean - 4 * stdev
+                upper_band = mean + 2 * stdev
+                lower_band = mean - 2 * stdev
 
           
             def trade(i):
+
                 macd = ma_delta
                 repeat = 1
                 vwap = positions_map("vwap")
                 qty = order_size(i, ma_delta)
+
+
+                low_vol = False
+                
+
+                if len(hist[i])>=25:
+                    recent = np.array(hist[i][-25:])
+                    mean_p = recent.mean()
+                else:
+                    mean_p = 0
+                    
+                if mean_p > 0:
+       
+                    std = recent.std(ddof=1)          # sample std
+                    vol_pct = std / mean_p
+                 
+                    print(vol_pct)
+                    if vol_pct < 0.005:
+                        low_vol = True
+                       
             
-                if abs(macd) >= 0.11:
+                if abs(macd) >= 0.10:
                     qty = 10000
                     repeat = 2
-         
+
+           
                     
-                #LONG ENTRY
+                if low_vol:
+                    print("LOW VOL")
+                    # mean reversion around VWAP
+                    if stock_mid[i] < lower_band:
                 
-                if ma_s[i] > ma_l[i] and macd > growth_threshold_up and stock_mid[i] > upper_band:
+                        qty = order_size(i, ma_delta)
+                        place_mkt(i, "BUY", qty)
+
+                    elif stock_mid[i] > upper_band:
+                        qty = order_size(i, ma_delta)
+                        place_mkt(i, "SELL", qty)
+
+                    return   
+                
+                if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
                     qty = order_size(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
                    
 
                 # SHORT ENTRY
-                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down and stock_mid[i] < lower_band :
+                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
                     qty = order_size(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
      
 
-            if tick >= 10 and previous_tick != tick:
+            if tick >= 0:
                 profit_take(i)
                 trade(i)
-              
-                
+       
+            
+            hist_prices.append(stock_mid[i])
+            sleep(0.1)
           
        
         previous_tick = tick
-        sleep(0.15)
         tick, status = get_tick_status()
         ticks += 1
 
