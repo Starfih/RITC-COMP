@@ -224,17 +224,19 @@ def main():
         return alpha * price + (1 - alpha) * ma_yest
     
 
-    def order_size(stk, delta):
+    def order_size_cur(stk):
 
-        base = MAX_SIZE_FX*0.7
-        scalar = 2500000
-        max = MAX_SIZE_FX
+        BASE_SIZE = 10000
+        curr_pos = positions_map('portfolio')[stk]
 
-        size = int(base + scalar * abs(delta))
-        if size > max:
-            return max
+        pos_factor = abs(curr_pos) / GROSS_LIMIT_SH
+        inv_factor = max(0.1, 1 - pos_factor)
 
-        return size
+        # === Combined size ===
+        size = int(BASE_SIZE * inv_factor)
+
+        # Make sure size is at least some minimum
+        return max(2000, size)
 
     def profit_take(stk):
         # Get full portfolio dictionary
@@ -342,7 +344,7 @@ def main():
                 macd = ma_delta
                 repeat = 1
 
-                qty = order_size(i, ma_delta)
+                qty = order_size_cur(i, ma_delta)
             
                 if abs(macd) >= 0.1:
                     qty = 10000
@@ -351,14 +353,14 @@ def main():
                 #LONG ENTRY
 
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up and stock_mid[i] > upper_band:
-                    qty = order_size(i, ma_delta)
+                    qty = order_size_cur(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
                         print("buy" , qty)
 
                 #SHORT ENTRY
                 elif ma_s[i] < ma_l[i] and macd < growth_threshold_down and stock_mid[i] < lower_band:
-                    qty = order_size(i, ma_delta)
+                    qty = order_size_cur(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
                         print("sell" , qty)
