@@ -367,11 +367,10 @@ def main():
                     if len(vol_smooth_list[i]) <= 2:
                         # first point: no previous value, so just use current vol
                         smooth_vol = vol_pct
-                     else:
+                    else:
                         smooth_vol = alpha * vol_pct + (1 - alpha) * vol_smooth_list[i][-1]
          
-                    vol_smooth[i].append(smooth_vol)
-
+                    vol_smooth_list[i].append(smooth_vol)
                     vol_pct_list[i].append(vol_pct)
 
                     threshold = np.percentile(vol_pct_list[i][-20:], 50)  # bottom 20%
@@ -402,6 +401,7 @@ def main():
                         if pos > 0:
                             qty = abs(pos)
                         place_mkt(i, "SELL", qty)
+
 
                 else:  
                 
