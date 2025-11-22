@@ -138,16 +138,12 @@ def order_size(stk, delta):
         scalar = scalar * 100
         max_sz = 2500000
 
-
         raw_size = base + scalar * abs(delta)  
-
 
         net_usage = (abs(net) / NET_LIMIT) + 0.25
         net_scale = max(0.0, 1.0 - net_usage)
-
    
         size_scale =  net_scale
-
    
         size = int(raw_size * size_scale)
 
@@ -157,6 +153,8 @@ def order_size(stk, delta):
             size = max_sz/20
 
         return size
+
+
 # --------- CORE LOGIC ----------
 def step_once():
     # Get executable prices
@@ -219,18 +217,25 @@ def step_once():
     
     if edge1 >= ARB_THRESHOLD_CAD and within_limits():
         # Basket rich: sell BULL & BEAR, buy RITC
-        q1 = order_size(edge1)
-        place_mkt(BULL, "SELL", q1)
-        place_mkt(BEAR, "SELL", q1)
-        place_mkt(RITC, "BUY",  q1)
+        q11 = order_size("BULL",edge1)
+        q12 = order_size("BEAR",edge1)
+        q13 = order_size("RITC",edge1)
+
+        place_mkt(BULL, "SELL", q11)
+        place_mkt(BEAR, "SELL", q12)
+        place_mkt(RITC, "BUY",  q13)
+
         traded = True
 
     elif edge2 >= ARB_THRESHOLD_CAD and within_limits():
         # ETF rich: buy BULL & BEAR, sell RITC
-        q2 = order_size(edge2)
-        place_mkt(BULL, "BUY",  q2)
-        place_mkt(BEAR, "BUY",  q2)
-        place_mkt(RITC, "SELL", q2)
+        q21 = order_size("BULL", edge2)
+        q22 = order_size("BEAR", edge2)
+        q23 = order_size("RITC", edge2)
+
+        place_mkt(BULL, "BUY",  q21)
+        place_mkt(BEAR, "BUY",  q22)
+        place_mkt(RITC, "SELL", q23)
         traded = True
     
    
@@ -259,9 +264,6 @@ def main():
 
         alpha = 2 / (days + 1)  # smoothing factor
         return alpha * price + (1 - alpha) * ma_yest
-    
-
-   
 
 
     def profit_take(stk):
