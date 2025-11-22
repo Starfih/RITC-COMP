@@ -115,6 +115,48 @@ def accept_active_tender_offers():
         return print("Tender Offer Accepted:", resp.ok)
     print("No active tenders")
 
+def order_size(stk, delta):
+        
+    pos   = positions_map("out")
+    gross = abs(pos[BULL]) + abs(pos[BEAR]) + 2*abs(pos[RITC])
+    net   = pos[BULL] + pos[BEAR] + 2*pos[RITC]
+
+    base   = MAX_SIZE_EQUITY
+    scalar = 14000
+    max_sz = MAX_SIZE_EQUITY
+
+    GROSS_LIMIT = MAX_GROSS
+    NET_LIMIT   = 250000 
+    if stk == "USD":
+        gross = abs(pos["USD"])
+        net = pos["USD"]
+
+        NET_LIMIT = 600000
+        GROSS_LIMIT = 600000
+
+        base = 2500000
+        scalar = scalar * 100
+        max_sz = 2500000
+
+
+        raw_size = base + scalar * abs(delta)  
+
+
+        net_usage = (abs(net) / NET_LIMIT) + 0.25
+        net_scale = max(0.0, 1.0 - net_usage)
+
+   
+        size_scale =  net_scale
+
+   
+        size = int(raw_size * size_scale)
+
+        size = min(size, max_sz)
+
+        if size < max_sz/20:
+            size = max_sz/20
+
+        return size
 # --------- CORE LOGIC ----------
 def step_once():
     # Get executable prices
@@ -219,49 +261,7 @@ def main():
         return alpha * price + (1 - alpha) * ma_yest
     
 
-    def order_size(stk, delta):
-        
-        pos   = positions_map("out")
-        gross = abs(pos[BULL]) + abs(pos[BEAR]) + 2*abs(pos[RITC])
-        net   = pos[BULL] + pos[BEAR] + 2*pos[RITC]
-
-        base   = MAX_SIZE_EQUITY
-        scalar = 14000
-        max_sz = MAX_SIZE_EQUITY
-
-        GROSS_LIMIT = MAX_GROSS
-        NET_LIMIT   = 250000 
-
-        if stk == "USD":
-            gross = abs(pos["USD"])
-            net = post["USD"]
-
-            NET_LIMIT = 50000000
-            GROSS_LIMIT = 50000000
-
-            base = 2500000
-            scalar = scalar * 100
-            max_sz = 2500000
-
-
-        raw_size = base + scalar * abs(delta)  
-
-
-        net_usage = (abs(net) / NET_LIMIT) + 0.25
-        net_scale = max(0.0, 1.0 - net_usage)
-
    
-        size_scale =  net_scale
-
-   
-        size = int(raw_size * size_scale)
-
-        size = min(size, max_sz)
-
-        if size < max_sz/20:
-            size = max_sz/20
-
-        return size
 
 
     def profit_take(stk):
