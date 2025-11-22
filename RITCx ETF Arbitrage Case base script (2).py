@@ -88,6 +88,12 @@ def positions_map(call):
 
 def place_mkt(ticker, action, qty): 
     # Sends Market orders; price param is ignore by most RIT cases when type=MARKET
+    PRINT_HEARTBEAT = True
+    r = s.post(f"{API}/orders",
+               params={"ticker": ticker, "type": "MARKET",
+                       "quantity": qty, "action": action})
+    if PRINT_HEARTBEAT:
+        print(f"ORDER {action} {qty} {ticker} -> {'OK' if r.ok else 'FAIL'}")
     return s.post(f"{API}/orders",
                   params={"ticker": ticker, "type": "MARKET",
                           "quantity": int(qty), "action": action}).ok
@@ -252,7 +258,7 @@ def mid_price(ticker):
     bid, ask = best_bid_ask(ticker)
     if bid == 0.0 and ask == 1e12:
         return None
-    print
+
     return 0.5 * (bid + ask)
 
 def main():
@@ -292,23 +298,23 @@ def main():
 
             if position > 0:
                 place_mkt(stk, "SELL", abs(position))
-                #print('profittaken1112211112222111111')
+                print('profittaken1112211112222111111')
          
 
             elif position < 0:
                 place_mkt(stk, "BUY", abs(position))
-                #print('profittaken11111111222222')
+                print('profittaken11111111222222')
 
         if pnl_pct <= target_loss and unrealized <= -10000:
 
             if position > 0:
                 place_mkt(stk, "SELL", abs(position))
-                #print('profitloss2222222222')
+                print('profitloss2222222222')
          
 
             elif position < 0:
                 place_mkt(stk, "BUY", abs(position))
-                #print('profitloss111111111')
+                print('profitloss111111111')
 
     ma_list_s = {USD: [mid_price(USD)] * 10}  # list of historical moving averages, long
     ma_list_l = {USD: [mid_price(USD)] * 10}
@@ -340,9 +346,9 @@ def main():
 
     
             ma_s[i] = moving_avg(i, ma_list_s[i][-1], days_s)
-            print(ma_s[i])
+       
             ma_l[i] = moving_avg(i, ma_list_l[i][-1], days_l)
-            print(ma_l[i])
+        
             ma_d[i] = moving_avg(i, ma_list_d[i][-1], 10)
 
             ma_list_s[i].append(ma_s[i])
@@ -385,15 +391,14 @@ def main():
                     qty = order_size(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
-                        print("buy" , qty)
+                     
 
                 #SHORT ENTRY
                 elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
                     qty = order_size(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
-                        print("sell" , qty)
-
+                   
             if tick >= 13 and tick != previous_tick:
                 trade(i)
                 profit_take(i)
