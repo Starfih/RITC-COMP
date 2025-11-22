@@ -399,7 +399,7 @@ def main():
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
                    
-            if tick >= 10 and previous_tick != tick:
+            if tick >= 10:
     
                 #profit_take(i)
                 trade(i)
@@ -410,7 +410,7 @@ def main():
           
         
         previous_tick = tick
-        sleep(0.1)
+        sleep(0.35)
         tick, status = get_tick_status()
         ticks += 1
 
