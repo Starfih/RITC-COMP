@@ -145,7 +145,7 @@ def order_size(stk, delta):
 
     raw_size = base + scalar 
 
-    net_usage = (abs(net) / NET_LIMIT) + 0.25
+    net_usage = (abs(net) / NET_LIMIT)
     net_scale = max(0.0, 1.0 - net_usage)
    
     size_scale = net_scale
@@ -154,10 +154,7 @@ def order_size(stk, delta):
 
     size = min(size, max_sz)
 
-    if size < max_sz/20:
-        size = max_sz/20
-
-    return size
+    return max(500, size)
 
 
 # --------- CORE LOGIC ----------
@@ -379,14 +376,14 @@ def main():
                 #LONG ENTRY
 
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
-                    qty = order_size(i, ma_delta)
+              
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
                      
 
                 #SHORT ENTRY
                 elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
-                    qty = order_size(i, ma_delta)
+       
                     
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
