@@ -134,7 +134,7 @@ def order_size(stk, delta):
     max_sz = MAX_SIZE_EQUITY
 
     GROSS_LIMIT = MAX_GROSS
-    NET_LIMIT   = 225000
+    NET_LIMIT   = 200000
 
     if stk == "USD":
         gross = abs(pos["USD"])
@@ -243,6 +243,7 @@ def step_once():
         place_mkt(BULL, "BUY",  q21)
         place_mkt(BEAR, "BUY",  q22)
         place_mkt(RITC, "SELL", q23)
+
         traded = True
     
    
@@ -299,23 +300,23 @@ def main():
         if pnl_pct >= target_gain :
 
             if position > 0:
-                place_mkt(stk, "SELL", min(max_pos,abs(position)))
+                place_mkt(stk, "SELL", min(max_pos,abs(position)/3))
                 print('profittaken1112211112222111111')
          
 
             elif position < 0:
-                place_mkt(stk, "BUY", min(max_pos,abs(position)))
+                place_mkt(stk, "BUY", min(max_pos,abs(position)/3))
                 print('profittaken11111111222222')
 
         if pnl_pct <= target_loss and stk == "USD" :
 
             if position > 0:
-                place_mkt(stk, "SELL", min(max_pos ,abs(position)))
+                place_mkt(stk, "SELL", min(max_pos ,abs(position)/3))
                 print('profitloss2222222222')
          
 
             elif position < 0:
-                place_mkt(stk, "BUY", min(max_pos,abs(position)))
+                place_mkt(stk, "BUY", min(max_pos,abs(position)/3))
                 print('profitloss111111111')
 
 
@@ -325,11 +326,11 @@ def main():
     ma_s = {USD: 0}  # moving averages
     ma_l = {USD: 0}  # moving averages
     ma_d = {USD: 0}  # moving averages
-    days_s = 30  # Amount of days short moving average is calculated on
-    days_l = 60  # Amount of days long moving average is calculated on
+    days_s = 20 # Amount of days short moving average is calculated on
+    days_l = 40  # Amount of days long moving average is calculated on
     ticks = 0
-    growth_threshold_up = 0.025 # Average difference in moving average required to justify trade
-    growth_threshold_down = -0.025  # Average difference in moving average required to justify trade
+    growth_threshold_up = 0.0012 # Average difference in moving average required to justify trade
+    growth_threshold_down = -0.0012  # Average difference in moving average required to justify trade
     previous_tick = -1
 
     # Run while case active
@@ -400,7 +401,7 @@ def main():
                    
             if tick >= 10 and previous_tick != tick:
     
-                profit_take(i)
+                #profit_take(i)
                 trade(i)
                 profit_take("BEAR")
                 profit_take("BULL")
