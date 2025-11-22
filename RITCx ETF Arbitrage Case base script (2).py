@@ -141,12 +141,7 @@ def step_once():
     
     #accept_active_tender_offers() # Automatically checking and acceptting all of the tender offer
 
-    def order_size(edge):
-        strength = edge / ARB_THRESHOLD_CAD
-        scaled = MAX_SIZE_EQUITY * (1 - math.exp(-strength))
-        return max(3000, min(int(scaled), MAX_SIZE_EQUITY))
-    
-
+  
     def tender_offers_valid():
         r = s.get(f"{API}/tenders")  # replace with the correct endpoint
         r.raise_for_status()
@@ -224,19 +219,50 @@ def main():
         return alpha * price + (1 - alpha) * ma_yest
     
 
-    def order_size_cur(stk):
+    def order_size(stk, delta):
+        
+        pos   = positions_map("out")
+        gross = abs(pos[BULL]) + abs(pos[BEAR]) + 2*abs(pos[RITC])
+        net   = pos[BULL] + pos[BEAR] + 2*pos[RITC]
 
-        BASE_SIZE = 10000
-        curr_pos = positions_map('portfolio')[stk]
+        base   = MAX_SIZE_EQUITY
+        scalar = 14000
+        max_sz = MAX_SIZE_EQUITY
 
-        pos_factor = abs(curr_pos) / GROSS_LIMIT_SH
-        inv_factor = max(0.1, 1 - pos_factor)
+        GROSS_LIMIT = MAX_GROSS
+        NET_LIMIT   = 250000 
 
-        # === Combined size ===
-        size = int(BASE_SIZE * inv_factor)
+        if stk == "USD":
+            gross = abs(pos["USD"])
+            net = post["USD"]
 
-        # Make sure size is at least some minimum
-        return max(2000, size)
+            NET_LIMIT = 50000000
+            GROSS_LIMIT = 50000000
+
+            base = 2500000
+            scalar = scalar * 100
+            max_sz = 2500000
+
+
+        raw_size = base + scalar * abs(delta)  
+
+
+        net_usage = (abs(net) / NET_LIMIT) + 0.25
+        net_scale = max(0.0, 1.0 - net_usage)
+
+   
+        size_scale =  net_scale
+
+   
+        size = int(raw_size * size_scale)
+
+        size = min(size, max_sz)
+
+        if size < max_sz/20:
+            size = max_sz/20
+
+        return size
+
 
     def profit_take(stk):
         # Get full portfolio dictionary
@@ -344,7 +370,7 @@ def main():
                 macd = ma_delta
                 repeat = 1
 
-                qty = order_size_cur(i, ma_delta)
+                qty = order_size(i, ma_delta)
             
                 if abs(macd) >= 0.1:
                     qty = 10000
@@ -352,15 +378,15 @@ def main():
 
                 #LONG ENTRY
 
-                if ma_s[i] > ma_l[i] and macd > growth_threshold_up and stock_mid[i] > upper_band:
-                    qty = order_size_cur(i, ma_delta)
+                if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
+                    qty = order_size(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
                         print("buy" , qty)
 
                 #SHORT ENTRY
-                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down and stock_mid[i] < lower_band:
-                    qty = order_size_cur(i, ma_delta)
+                elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
+                    qty = order_size(i, ma_delta)
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
                         print("sell" , qty)
