@@ -129,7 +129,7 @@ def order_size(stk, delta):
 
     
 
-    base   = 6000
+    base   = 4500
     scalar = 0
     max_sz = MAX_SIZE_EQUITY
 
@@ -149,7 +149,7 @@ def order_size(stk, delta):
     raw_size = base + scalar 
 
     net_usage = (abs(net) / NET_LIMIT)
-    gross_usage = (abs(net) / GROSS_LIMIT)
+   
     net_scale = max(0.0, 1.0 - net_usage)
     print(net_scale)
    
@@ -384,7 +384,7 @@ def main():
 
                 qty = order_size(i, ma_delta)
           
-         
+                qty = max(qty, 120000)
                 #LONG ENTRY
 
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
