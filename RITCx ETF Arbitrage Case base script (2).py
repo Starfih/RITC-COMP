@@ -126,7 +126,7 @@ def order_size(stk, delta):
     pos   = positions_map("out")
     net   = pos[BULL] + pos[BEAR] + 2*pos[RITC]
 
-    base   = 10000
+    base   = 5000
     scalar = 0
     max_sz = MAX_SIZE_EQUITY
 
@@ -137,10 +137,10 @@ def order_size(stk, delta):
         gross = abs(pos["USD"])
         net = pos["USD"]
 
-        NET_LIMIT = 500000
+        NET_LIMIT = 400000
         GROSS_LIMIT = 500000
 
-        base = 2500000
+        base = 100000
         max_sz = 2500000
 
     raw_size = base + scalar 
@@ -297,7 +297,7 @@ def main():
                 place_mkt(stk, "BUY", min(2500000,abs(position)))
                 print('profittaken11111111222222')
 
-        if pnl_pct <= target_loss :
+        if pnl_pct <= target_loss and stk == 'USD' :
 
             if position > 0:
                 place_mkt(stk, "SELL", min(2500000,abs(position)))
@@ -377,7 +377,7 @@ def main():
                 #LONG ENTRY
 
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
-                    if pos < 0:
+                    if positions_map("out")[i]  < 0: 
                         place_mkt(i, "BUY", abs(positions_map("out")[i])/3)
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
@@ -385,7 +385,7 @@ def main():
 
                 #SHORT ENTRY
                 elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
-                    if pos > 0:
+                    if positions_map("out")[i] > 0:
                         place_mkt(i, "BUY", abs(positions_map("out")[i])/3)
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
