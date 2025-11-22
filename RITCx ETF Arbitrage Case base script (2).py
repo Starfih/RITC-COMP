@@ -41,7 +41,7 @@ MAX_SIZE_EQUITY = 10000 # per order for BULL/BEAR/RITC
 MAX_SIZE_FX = 2500000  # per order for CAD/USD
 
 # Basic risk guardrails (adjust as needed)
-MAX_LONG_NET  = 250000
+MAX_LONG_NET  = 300000
 MAX_SHORT_NET = -250000
 MAX_GROSS     = 500000
 ORDER_QTY     = 5000    # child order size for arb legs
@@ -124,32 +124,31 @@ def accept_active_tender_offers():
 def order_size(stk, delta):
         
     pos   = positions_map("out")
-    gross = abs(pos[BULL]) + abs(pos[BEAR]) + 2*abs(pos[RITC])
     net   = pos[BULL] + pos[BEAR] + 2*pos[RITC]
 
-    base   = MAX_SIZE_EQUITY
-    scalar = 14000
+    base   = 10000
+    scalar = 5000
     max_sz = MAX_SIZE_EQUITY
 
     GROSS_LIMIT = MAX_GROSS
-    NET_LIMIT   = 250000 
+    NET_LIMIT   = 300000
     if stk == "USD":
         gross = abs(pos["USD"])
         net = pos["USD"]
 
-        NET_LIMIT = 600000
-        GROSS_LIMIT = 600000
+        NET_LIMIT = 500000
+        GROSS_LIMIT = 500000
 
         base = 2500000
-        scalar = scalar * 100
+        scalar = scalar 
         max_sz = 2500000
 
-    raw_size = base + scalar * abs(delta)  
+    raw_size = base + scalar 
 
     net_usage = (abs(net) / NET_LIMIT) + 0.25
     net_scale = max(0.0, 1.0 - net_usage)
    
-    size_scale =  net_scale
+    size_scale = net_scale
    
     size = int(raw_size * size_scale)
 
@@ -274,18 +273,15 @@ def main():
 
     def profit_take(stk):
         # Get full portfolio dictionary
-      
 
+        unrealized = positions_map("unrealized")[stk]
         position = positions_map("out")[stk]      # int
-        unrealized =  positions_map("unrealized")[stk]
 
-
-
-        if position == 0 or unrealized is None:
+        if position == 0 :
             return
 
         # Profit-taking threshold
-        target_gain = 0.43   # 50% return
+        target_gain = 0.40   # 50% return
         target_loss = -0.28  # 30% loss ROI
 
         # Actual return
@@ -293,26 +289,26 @@ def main():
 
 
         # If profit % exceeds threshold → exit
-        if pnl_pct >= target_gain and unrealized >= 10000:
+        if pnl_pct >= target_gain :
 
             if position > 0:
-                place_mkt(stk, "SELL", abs(position))
+                place_mkt(stk, "SELL", min(2500000,abs(position)))
                 print('profittaken1112211112222111111')
          
 
             elif position < 0:
-                place_mkt(stk, "BUY", abs(position))
+                place_mkt(stk, "BUY", min(2500000,abs(position)))
                 print('profittaken11111111222222')
 
-        if pnl_pct <= target_loss and unrealized <= -10000:
+        if pnl_pct <= target_loss :
 
             if position > 0:
-                place_mkt(stk, "SELL", abs(position))
+                place_mkt(stk, "SELL", min(2500000,abs(position)))
                 print('profitloss2222222222')
          
 
             elif position < 0:
-                place_mkt(stk, "BUY", abs(position))
+                place_mkt(stk, "BUY", min(2500000,abs(position)))
                 print('profitloss111111111')
 
     ma_list_s = {USD: [mid_price(USD)] * 10}  # list of historical moving averages, long
@@ -321,11 +317,11 @@ def main():
     ma_s = {USD: 0}  # moving averages
     ma_l = {USD: 0}  # moving averages
     ma_d = {USD: 0}  # moving averages
-    days_s = 30  # Amount of days short moving average is calculated on
-    days_l = 60  # Amount of days long moving average is calculated on
+    days_s = 20  # Amount of days short moving average is calculated on
+    days_l = 40  # Amount of days long moving average is calculated on
     ticks = 0
-    growth_threshold_up = 0.002  # Average difference in moving average required to justify trade
-    growth_threshold_down = -0.002  # Average difference in moving average required to justify trade
+    growth_threshold_up = 0.0015 # Average difference in moving average required to justify trade
+    growth_threshold_down = -0.0015  # Average difference in moving average required to justify trade
     previous_tick = -1
 
     # Run while case active
@@ -335,7 +331,6 @@ def main():
         step_once()
         # Optional: print a lightweight heartbeat every 1s
         #print(f"tick={tick} e1={e1:.4f} e2={e2:.4f} ritc_ask_cad={info['ritc_ask_cad']:.4f}")
-
 
         mid_USD = mid_price(USD)
 
@@ -361,7 +356,7 @@ def main():
 
             upper_band = 0 
             lower_band = 0
-            window = 15
+            window = 10
             
 
             if len(ma_list_d[i]) >= window:
@@ -379,11 +374,8 @@ def main():
                 repeat = 1
 
                 qty = order_size(i, ma_delta)
-            
-                if abs(macd) >= 0.1:
-                    qty = 10000
-                    repeat = 2
-
+          
+                print(qty)
                 #LONG ENTRY
 
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
@@ -395,17 +387,20 @@ def main():
                 #SHORT ENTRY
                 elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
                     qty = order_size(i, ma_delta)
+                    
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
                    
-            if tick >= 13 and tick != previous_tick:
-                trade(i)
+            if tick >= 13:
+    
                 profit_take(i)
+                trade(i)
+                
                 
           
         
         previous_tick = tick
-        sleep(0.2)
+        sleep(0.3)
         tick, status = get_tick_status()
         ticks += 1
 
