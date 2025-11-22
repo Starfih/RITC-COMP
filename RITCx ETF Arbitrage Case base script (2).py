@@ -192,7 +192,6 @@ def step_once():
         r = s.get(f"{API}/tenders")  # replace with the correct endpoint
         r.raise_for_status()
         offers = r.json()
-        print(offers)
 
         if offers:
             price = offers[0]['price']
