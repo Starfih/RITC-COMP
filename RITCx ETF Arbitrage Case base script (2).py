@@ -127,11 +127,12 @@ def order_size(stk, delta):
     net   = pos[BULL] + pos[BEAR] + 2*pos[RITC]
 
     base   = 10000
-    scalar = 5000
+    scalar = 0
     max_sz = MAX_SIZE_EQUITY
 
     GROSS_LIMIT = MAX_GROSS
-    NET_LIMIT   = 300000
+    NET_LIMIT   = 250000
+
     if stk == "USD":
         gross = abs(pos["USD"])
         net = pos["USD"]
@@ -140,7 +141,6 @@ def order_size(stk, delta):
         GROSS_LIMIT = 500000
 
         base = 2500000
-        scalar = scalar 
         max_sz = 2500000
 
     raw_size = base + scalar 
@@ -278,8 +278,8 @@ def main():
             return
 
         # Profit-taking threshold
-        target_gain = 0.40   # 50% return
-        target_loss = -0.28  # 30% loss ROI
+        target_gain = 0.023   # 50% return
+        target_loss = -0.04  # 30% loss ROI
 
         # Actual return
         pnl_pct = unrealized/abs(position)
@@ -307,6 +307,7 @@ def main():
             elif position < 0:
                 place_mkt(stk, "BUY", min(2500000,abs(position)))
                 print('profitloss111111111')
+
 
     ma_list_s = {USD: [mid_price(USD)] * 10}  # list of historical moving averages, long
     ma_list_l = {USD: [mid_price(USD)] * 10}
@@ -372,23 +373,24 @@ def main():
 
                 qty = order_size(i, ma_delta)
           
-                print(qty)
+         
                 #LONG ENTRY
 
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
-              
+                    if pos < 0:
+                        place_mkt(i, "BUY", abs(positions_map("out")[i])/3)
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
                      
 
                 #SHORT ENTRY
                 elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
-       
-                    
+                    if pos > 0:
+                        place_mkt(i, "BUY", abs(positions_map("out")[i])/3)
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
                    
-            if tick >= 13:
+            if tick >= 10 and previous_tick != tick:
     
                 profit_take(i)
                 trade(i)
@@ -397,7 +399,7 @@ def main():
           
         
         previous_tick = tick
-        sleep(0.3)
+        sleep(0.1)
         tick, status = get_tick_status()
         ticks += 1
 
