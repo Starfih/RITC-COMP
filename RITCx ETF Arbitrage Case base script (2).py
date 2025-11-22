@@ -273,9 +273,10 @@ def main():
 
         unrealized = positions_map("unrealized")[stk]
         position = positions_map("out")[stk]      # int
-
+        max_pos = 0
         if position == 0 :
             return
+
 
         # Profit-taking threshold
         target_gain = 0.023   # 50% return
@@ -287,14 +288,19 @@ def main():
 
         # If profit % exceeds threshold → exit
         if pnl_pct >= target_gain :
+            if stk == "USD":
+                max_pos = 2500000
+            else:
+                max_pos = 10000
+                target_gain = 0.43
 
             if position > 0:
-                place_mkt(stk, "SELL", min(2500000,abs(position)))
+                place_mkt(stk, "SELL", min(max_pos,abs(position)))
                 print('profittaken1112211112222111111')
          
 
             elif position < 0:
-                place_mkt(stk, "BUY", min(2500000,abs(position)))
+                place_mkt(stk, "BUY", min(max_pos,abs(position)))
                 print('profittaken11111111222222')
 
         if pnl_pct <= target_loss and stk == 'USD' :
@@ -394,7 +400,9 @@ def main():
     
                 profit_take(i)
                 trade(i)
-                
+                profit_take("BEAR")
+                profit_take("BULL")
+                profit_take("RITC")
                 
           
         
