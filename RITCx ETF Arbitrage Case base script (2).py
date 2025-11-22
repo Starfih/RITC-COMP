@@ -125,8 +125,11 @@ def order_size(stk, delta):
         
     pos   = positions_map("out")
     net   = pos[BULL] + pos[BEAR] + 2*pos[RITC]
+    
 
-    base   = 5000
+    
+
+    base   = 8000
     scalar = 0
     max_sz = MAX_SIZE_EQUITY
 
@@ -138,7 +141,7 @@ def order_size(stk, delta):
         net = pos["USD"]
 
         NET_LIMIT = 400000
-        GROSS_LIMIT = 500000
+        GROSS_LIMIT = 5000000
 
         base = 100000
         max_sz = 2500000
@@ -146,7 +149,9 @@ def order_size(stk, delta):
     raw_size = base + scalar 
 
     net_usage = (abs(net) / NET_LIMIT)
+    gross_usage = (abs(net) / GROSS_LIMIT)
     net_scale = max(0.0, 1.0 - net_usage)
+    print(net_scale)
    
     size_scale = net_scale
    
@@ -279,8 +284,8 @@ def main():
 
 
         # Profit-taking threshold
-        target_gain = 0.023   # 50% return
-        target_loss = -0.04  # 30% loss ROI
+        target_gain = 0.025
+        target_loss = -0.015
 
         # Actual return
         pnl_pct = unrealized/abs(position)
@@ -288,7 +293,7 @@ def main():
             max_pos = 2500000
         else:
             max_pos = 10000
-            target_gain = 0.5
+            target_gain = 0.23
 
         # If profit % exceeds threshold → exit
         if pnl_pct >= target_gain :
@@ -302,15 +307,15 @@ def main():
                 place_mkt(stk, "BUY", min(max_pos,abs(position)))
                 print('profittaken11111111222222')
 
-        if pnl_pct <= target_loss and stk == 'USD' :
+        if pnl_pct <= target_loss and stk == "USD" :
 
             if position > 0:
-                place_mkt(stk, "SELL", min(2500000,abs(position)))
+                place_mkt(stk, "SELL", min(max_pos ,abs(position)))
                 print('profitloss2222222222')
          
 
             elif position < 0:
-                place_mkt(stk, "BUY", min(2500000,abs(position)))
+                place_mkt(stk, "BUY", min(max_pos,abs(position)))
                 print('profitloss111111111')
 
 
@@ -320,11 +325,11 @@ def main():
     ma_s = {USD: 0}  # moving averages
     ma_l = {USD: 0}  # moving averages
     ma_d = {USD: 0}  # moving averages
-    days_s = 20  # Amount of days short moving average is calculated on
-    days_l = 40  # Amount of days long moving average is calculated on
+    days_s = 30  # Amount of days short moving average is calculated on
+    days_l = 60  # Amount of days long moving average is calculated on
     ticks = 0
-    growth_threshold_up = 0.0015 # Average difference in moving average required to justify trade
-    growth_threshold_down = -0.0015  # Average difference in moving average required to justify trade
+    growth_threshold_up = 0.025 # Average difference in moving average required to justify trade
+    growth_threshold_down = -0.025  # Average difference in moving average required to justify trade
     previous_tick = -1
 
     # Run while case active
@@ -382,16 +387,14 @@ def main():
                 #LONG ENTRY
 
                 if ma_s[i] > ma_l[i] and macd > growth_threshold_up:
-                    if positions_map("out")[i]  < 0: 
-                        place_mkt(i, "BUY", abs(positions_map("out")[i])/3)
+
                     for j in range(repeat):
                         place_mkt(i, "BUY", qty)
                      
 
                 #SHORT ENTRY
                 elif ma_s[i] < ma_l[i] and macd < growth_threshold_down:
-                    if positions_map("out")[i] > 0:
-                        place_mkt(i, "BUY", abs(positions_map("out")[i])/3)
+
                     for j in range(repeat):
                         place_mkt(i, "SELL", qty)
                    
