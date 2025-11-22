@@ -138,21 +138,21 @@ def order_size(stk, delta):
         scalar = scalar * 100
         max_sz = 2500000
 
-        raw_size = base + scalar * abs(delta)  
+    raw_size = base + scalar * abs(delta)  
 
-        net_usage = (abs(net) / NET_LIMIT) + 0.25
-        net_scale = max(0.0, 1.0 - net_usage)
+    net_usage = (abs(net) / NET_LIMIT) + 0.25
+    net_scale = max(0.0, 1.0 - net_usage)
    
-        size_scale =  net_scale
+    size_scale =  net_scale
    
-        size = int(raw_size * size_scale)
+    size = int(raw_size * size_scale)
 
-        size = min(size, max_sz)
+    size = min(size, max_sz)
 
-        if size < max_sz/20:
-            size = max_sz/20
+    if size < max_sz/20:
+        size = max_sz/20
 
-        return size
+    return size
 
 
 # --------- CORE LOGIC ----------
@@ -220,6 +220,7 @@ def step_once():
         q11 = order_size("BULL",edge1)
         q12 = order_size("BEAR",edge1)
         q13 = order_size("RITC",edge1)
+   
 
         place_mkt(BULL, "SELL", q11)
         place_mkt(BEAR, "SELL", q12)
