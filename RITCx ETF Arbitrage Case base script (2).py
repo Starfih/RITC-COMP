@@ -129,12 +129,12 @@ def order_size(stk, delta):
 
     
 
-    base   = 8000
+    base   = 6000
     scalar = 0
     max_sz = MAX_SIZE_EQUITY
 
     GROSS_LIMIT = MAX_GROSS
-    NET_LIMIT   = 250000
+    NET_LIMIT   = 225000
 
     if stk == "USD":
         gross = abs(pos["USD"])
