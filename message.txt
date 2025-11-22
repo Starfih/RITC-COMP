@@ -257,7 +257,7 @@ def main():
 
         # Profit-taking threshold
         target_gain = 0.4   # 50% return
-        target_loss = -0.4  # 30% loss ROI
+        target_loss = -200 # 30% loss ROI
 
         # Actual return
         pnl_pct = unrealized/abs(position)
@@ -275,7 +275,7 @@ def main():
                 place_mkt(stk, "BUY", abs(position))
                 print('profittaken11111111222222')
 
-        if pnl_pct <= target_loss and unrealized <= -10000:
+        if pnl_pct <= target_loss :
 
             if position > 0:
                 place_mkt(stk, "SELL", abs(position))
@@ -373,9 +373,9 @@ def main():
                     vol_smooth_list[i].append(smooth_vol)
                     vol_pct_list[i].append(vol_pct)
 
-                    threshold = np.percentile(vol_pct_list[i][-20:], 50)  # bottom 20%
+                    threshold = np.percentile(vol_smooth_list[i][-20:], 20)  # bottom 20%
 
-                    low_vol = vol_pct < threshold
+                    low_vol = smooth_vol < threshold
 
                     print(vol_pct, threshold)
 
@@ -427,7 +427,7 @@ def main():
        
             
             
-            sleep(0.3)
+            sleep(0.1)
           
        
         previous_tick = tick
