@@ -284,15 +284,14 @@ def main():
 
         # Actual return
         pnl_pct = unrealized/abs(position)
-
+        if stk == "USD":
+            max_pos = 2500000
+        else:
+            max_pos = 10000
+            target_gain = 0.5
 
         # If profit % exceeds threshold → exit
         if pnl_pct >= target_gain :
-            if stk == "USD":
-                max_pos = 2500000
-            else:
-                max_pos = 10000
-                target_gain = 0.43
 
             if position > 0:
                 place_mkt(stk, "SELL", min(max_pos,abs(position)))
